@@ -6,4 +6,6 @@
     <string name="writeNfc">普通验证</string>
     <string name="clear">清空</string>
     <string name="title_activity_main2">Main2Activity</string>
+
+    <string name="action_settings">Settings</string>
 </resources>

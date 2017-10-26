@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="types">
+        <item>上班  上车打卡</item>
+        <item>上班  下车打卡</item>
+        <item>下班  上车打卡</item>
+        <item>下班  下车打卡</item>
+    </string-array>
+</resources>
