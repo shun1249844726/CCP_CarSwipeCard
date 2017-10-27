@@ -15,5 +15,8 @@ public class Constant {
     public static boolean GETUP = true;
     public static boolean GETOFF = false;
 
+    public static boolean GOOFF = false;
+    public static boolean GOTO = true;
+
 
 }

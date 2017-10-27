@@ -27,7 +27,7 @@ public class RealmHelper {
      */
     public void addSwipLog(SwipCardLog swipCardLog){
         mRealm.beginTransaction();
-        mRealm.copyToRealm(swipCardLog);
+        mRealm.copyToRealmOrUpdate(swipCardLog);
         mRealm.commitTransaction();
     }
 
@@ -37,6 +37,7 @@ public class RealmHelper {
      */
     public void updateSwipLog(SwipCardLog swipCardLog){
         SwipCardLog log = mRealm.where(SwipCardLog.class).equalTo("cardnum",swipCardLog.getCardnum()).findFirst();
+
         mRealm.beginTransaction();
         log.setName(swipCardLog.getName());
         log.setStaffnum(swipCardLog.getStaffnum());
@@ -63,6 +64,7 @@ public class RealmHelper {
 
     }
     public SwipCardLog qurryLogByCardNum(String cardnumber){
+
         SwipCardLog log = mRealm.where(SwipCardLog.class).equalTo("cardnum",cardnumber).findFirst();
 
         return log;

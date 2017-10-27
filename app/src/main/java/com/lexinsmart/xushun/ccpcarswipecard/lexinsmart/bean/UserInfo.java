@@ -1,20 +1,17 @@
 package com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean;
 
-import java.sql.Timestamp;
-
 /**
- * Created by xushun on 2017/10/26.
+ * Created by xushun on 2017/10/27.
  * 功能描述：
  * 心情：
  */
 
-public class GetInfo {
+public class UserInfo {
+
     private String success;
     private String name;
     private String staffNum;
     private String cardNum;
-    private String checkintime;
-    private String checkouttime;
 
     public String getSuccess() {
         return success;
@@ -46,21 +43,5 @@ public class GetInfo {
 
     public void setCardNum(String cardNum) {
         this.cardNum = cardNum;
-    }
-
-    public String getCheckintime() {
-        return checkintime;
-    }
-
-    public void setCheckintime(String checkintime) {
-        this.checkintime = checkintime;
-    }
-
-    public String getCheckouttime() {
-        return checkouttime;
-    }
-
-    public void setCheckouttime(String checkouttime) {
-        this.checkouttime = checkouttime;
     }
 }
