@@ -8,6 +8,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -18,6 +19,7 @@ import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -26,6 +28,20 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import com.amap.api.location.AMapLocation;
+import com.amap.api.location.AMapLocationClient;
+import com.amap.api.location.AMapLocationClientOption;
+import com.amap.api.location.AMapLocationListener;
+import com.amap.api.maps.AMap;
+import com.amap.api.maps.CameraUpdateFactory;
+import com.amap.api.maps.LocationSource;
+import com.amap.api.maps.MapView;
+import com.amap.api.maps.UiSettings;
+import com.amap.api.maps.model.BitmapDescriptorFactory;
+import com.amap.api.maps.model.LatLng;
+import com.amap.api.maps.model.MyLocationStyle;
+import com.amap.api.maps.model.Polygon;
+import com.amap.api.maps.model.PolygonOptions;
 import com.dk.bleNfc.BleManager.BleManager;
 import com.dk.bleNfc.BleManager.Scanner;
 import com.dk.bleNfc.BleManager.ScannerCallback;
@@ -37,6 +53,7 @@ import com.dk.bleNfc.DeviceManager.DeviceManagerCallback;
 import com.dk.bleNfc.Exception.DeviceNoResponseException;
 import com.dk.bleNfc.Tool.StringTool;
 import com.lexinsmart.xushun.ccpcarswipecard.R;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.CheckPermissionsActivity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.GetInfo;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.SwipCardLog;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.UserInfo;
@@ -63,7 +80,7 @@ import butterknife.OnClick;
  * 心情：
  */
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends CheckPermissionsActivity implements LocationSource,AMapLocationListener {
     BleNfcDeviceService mBleNfcDeviceService;
     @BindView(R.id.toolbar)
     Toolbar mToolbar;
@@ -100,6 +117,19 @@ public class MainActivity extends AppCompatActivity {
     int NowType = 1;
     Context mContext;
 
+
+    //map 相关：
+    private AMap mAMap;
+    private MapView mMapView;
+    private Polygon mPolygon;
+    private AMapLocationClient mLocationClient = null;
+    private AMapLocationClientOption mLocationClientOption =null;
+
+    private LocationSource.OnLocationChangedListener mListener = null;
+    private AMapLocationClient mlocationClient;
+    private AMapLocationClientOption mLocationOption;
+
+    private LatLng myLatLng = null;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -118,9 +148,78 @@ public class MainActivity extends AppCompatActivity {
         Intent gattServiceIntent = new Intent(this, BleNfcDeviceService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
 
-        Logger.d("debug open");
+        mMapView = (MapView) findViewById(R.id.mp_fence);
+        mMapView.onCreate(savedInstanceState);
+        initFence();
+
     }
 
+    private void initFence() {
+
+        if(mAMap == null){
+            mAMap = mMapView.getMap();
+            UiSettings settings = mAMap.getUiSettings();
+            mAMap.setLocationSource(this);
+            settings.setMyLocationButtonEnabled(true);
+            mAMap.setMyLocationEnabled(true);
+
+            mAMap.moveCamera(CameraUpdateFactory.zoomBy(5));
+            setUpMap();
+        }
+
+        mLocationClient = new AMapLocationClient(getApplicationContext());
+        mLocationClient.setLocationListener(this);
+
+        mLocationClientOption = new AMapLocationClientOption();
+        mLocationClientOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Hight_Accuracy);
+        //设置是否返回地址信息（默认返回地址信息）
+        mLocationClientOption.setNeedAddress(true);
+        //设置是否只定位一次,默认为false
+        mLocationClientOption.setOnceLocation(false);
+        //设置是否强制刷新WIFI，默认为强制刷新
+        mLocationClientOption.setWifiActiveScan(true);
+        //设置是否允许模拟位置,默认为false，不允许模拟位置
+        mLocationClientOption.setMockEnable(false);
+        //设置定位间隔,单位毫秒,默认为2000ms
+        mLocationClientOption.setInterval(2000);
+        //给定位客户端对象设置定位参数
+        mLocationClient.setLocationOption(mLocationClientOption);
+        //启动定位
+        mLocationClient.startLocation();
+    }
+    /**
+     * 设置一些amap的属性
+     */
+    private void setUpMap() {
+        mAMap.setLocationSource(this);// 设置定位监听
+        mAMap.getUiSettings().setMyLocationButtonEnabled(true);// 设置默认定位按钮是否显示
+        MyLocationStyle myLocationStyle = new MyLocationStyle();
+        // 自定义定位蓝点图标
+        myLocationStyle.myLocationIcon(
+                BitmapDescriptorFactory.fromResource(R.mipmap.gps_point));
+        // 自定义精度范围的圆形边框颜色
+        myLocationStyle.strokeColor(Color.argb(0, 0, 0, 0));
+        // 自定义精度范围的圆形边框宽度
+        myLocationStyle.strokeWidth(0);
+        // 设置圆形的填充颜色
+        myLocationStyle.radiusFillColor(Color.argb(0, 0, 0, 0));
+        // 将自定义的 myLocationStyle 对象添加到地图上
+        mAMap.setMyLocationStyle(myLocationStyle);
+        mAMap.setMyLocationEnabled(true);// 设置为true表示显示定位层并可触发定位，false表示隐藏定位层并不可触发定位，默认是false
+        // 设置定位的类型为定位模式 ，可以由定位、跟随或地图根据面向方向旋转几种
+        mAMap.setMyLocationType(AMap.LOCATION_TYPE_LOCATE);
+
+        // 绘制一个长方形
+        PolygonOptions pOption = new PolygonOptions();
+        pOption.add(new LatLng(31.978761, 120.903709));
+        pOption.add(new LatLng(31.979339, 120.905897));
+        pOption.add(new LatLng(31.9774, 120.905173));
+
+        mPolygon = mAMap.addPolygon(pOption.strokeWidth(4)
+                .strokeColor(Color.argb(50, 1, 1, 1))
+                .fillColor(Color.argb(50, 1, 1, 1)));
+
+    }
     @OnClick(R.id.btn_submit)
     void submit(View view) {
         Logger.d("submit");
@@ -529,8 +628,9 @@ public class MainActivity extends AppCompatActivity {
     private void ProcessSwipLog(String cardNumberString, Handler handler) {
         String info = "";
         RealmHelper mRealmHelper = new RealmHelper(mContext);
-        boolean inFactory = true;
+        boolean inFactory = mPolygon.contains(myLatLng);   //是否在围栏位置内。
         boolean goOnOrGooff = false; // 下班 false  上班；true
+
         if (!mRealmHelper.isLogExist(cardNumberString)) { //没有记录
             if (inFactory) {
                 info += "下班 厂内上车";
@@ -937,11 +1037,19 @@ public class MainActivity extends AppCompatActivity {
             mBleNfcDeviceService.setScannerCallback(scannerCallback);
             mBleNfcDeviceService.setDeviceManagerCallback(deviceManagerCallback);
         }
-    }
 
+        mMapView.onResume();
+    }
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        //在activity执行onSaveInstanceState时执行mMapView.onSaveInstanceState (outState)，实现地图生命周期管理
+        mMapView.onSaveInstanceState(outState);
+    }
     @Override
     protected void onPause() {
         super.onPause();
+        mMapView.onPause();
     }
 
     @Override
@@ -958,5 +1066,53 @@ public class MainActivity extends AppCompatActivity {
         }
 
         unbindService(mServiceConnection);
+
+        mMapView.onDestroy();
+    }
+
+    @Override
+    public void onLocationChanged(AMapLocation amapLocation) {
+        if (mListener != null && amapLocation != null) {
+            if (amapLocation != null && amapLocation.getErrorCode() == 0) {
+                mListener.onLocationChanged(amapLocation);// 显示系统小蓝点
+
+                //经纬度：   [词典]	longitude and latitude
+                myLatLng = new LatLng(amapLocation.getLatitude(),amapLocation.getLongitude());
+            } else {
+                String errText = "定位失败," + amapLocation.getErrorCode() + ": "
+                        + amapLocation.getErrorInfo();
+                Log.e("AmapErr", errText);
+            }
+        }
+    }
+
+    @Override
+    public void activate(OnLocationChangedListener listener) {
+        mListener = listener;
+        if (mlocationClient == null) {
+            mlocationClient = new AMapLocationClient(this);
+            mLocationOption = new AMapLocationClientOption();
+            // 设置定位监听
+            mlocationClient.setLocationListener(this);
+            // 设置为高精度定位模式
+            mLocationOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Hight_Accuracy);
+            // 只是为了获取当前位置，所以设置为单次定位
+            mLocationOption.setOnceLocation(false);
+            mLocationOption.setGpsFirst(true);
+            // 设置定位参数
+            mlocationClient.setLocationOption(mLocationOption);
+            mlocationClient.startLocation();
+        }
+
+    }
+
+    @Override
+    public void deactivate() {
+        mListener = null;
+        if (mlocationClient != null) {
+            mlocationClient.stopLocation();
+            mlocationClient.onDestroy();
+        }
+        mlocationClient = null;
     }
 }
