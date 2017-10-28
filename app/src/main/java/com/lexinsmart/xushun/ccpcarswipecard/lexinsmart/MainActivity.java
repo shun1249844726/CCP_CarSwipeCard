@@ -582,7 +582,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                         RealmHelper realmHelper = new RealmHelper(mContext);
                         int number = realmHelper.getIncarCount();
 
-                        mTvNowCount.setText("实时人数:" + number);
+                        mTvNowCount.setText(number+"人");
                         Logger.d("实时人数：" + number);
                         realmHelper.close();
                         break;
@@ -664,7 +664,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 // go on or go of  下班 false  上班；true
                 if (mRealmHelper.getSwipCount(cardNumberString)%2 == 1 && goOnOrGooff){ //下车了 上班 ，场内
                     Logger.d("send:" + log);//TODO 在这里发送数据。
-                    info += "上班 厂内下车 ";
+                    info += "上班-厂内-下车->send";
                     logNew.setGetOnFlag(false);
 
                 }else if (mRealmHelper.getSwipCount(cardNumberString) %2 ==1 && !goOnOrGooff){
@@ -676,7 +676,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                     logNew.setGetOnFlag(true);
 
                 }else if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 0 && !goOnOrGooff){
-                    info += "下班 厂内 又上车了";
+                    Logger.d("send:" + log);//TODO 在这里发送数据。
+                    info += "下班 厂内 又上车 ->send";
                     logNew.setGetOnFlag(true);
 
                 }
@@ -684,19 +685,19 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             } else {
                 // go on or go of  下班 false  上班；true
                 if (mRealmHelper.getSwipCount(cardNumberString)%2 == 1 && goOnOrGooff){ //厂外 上班 下车
-                    info += " 厂外 上班 下车 ";
+                    info += "上班-厂外-下车 ";
                     logNew.setGetOnFlag(false);
 
                 }else if (mRealmHelper.getSwipCount(cardNumberString) %2 ==1 && !goOnOrGooff){ //下班回家到家了
-                    info += "厂外 下班回家到家了";
+                    info += "下班-厂外-下车";
                     logNew.setGetOnFlag(false);
 
                 }else if (mRealmHelper.getSwipCount(cardNumberString) %2 == 0 && goOnOrGooff){ //
-                    info += "厂外 上班 又上车了";
+                    info += "上班-厂外-又上车";
                     logNew.setGetOnFlag(true);
 
                 }else if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 0 && !goOnOrGooff){
-                    info += "下班 厂外 又上车了";
+                    info += "下班-厂外-又上车";
                     logNew.setGetOnFlag(true);
 
                 }

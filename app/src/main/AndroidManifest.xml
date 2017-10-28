@@ -69,14 +69,17 @@
         <service android:name="com.amap.api.location.APSService" >
         </service>
         <activity android:name=".lexinsmart.MainActivity">
+
+        </activity>
+        <activity android:name=".lexinsmart.activity.FenceActivity">
+
+        </activity>
+        <activity android:name=".lexinsmart.activity.SplashActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-        </activity>
-        <activity android:name=".lexinsmart.activity.FenceActivity">
-
         </activity>
         <service android:name="com.dk.bleNfc.BleNfcDeviceService" />
 
