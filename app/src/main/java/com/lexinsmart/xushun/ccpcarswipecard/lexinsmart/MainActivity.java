@@ -54,9 +54,11 @@ import com.dk.bleNfc.Exception.DeviceNoResponseException;
 import com.dk.bleNfc.Tool.StringTool;
 import com.lexinsmart.xushun.ccpcarswipecard.R;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.CheckPermissionsActivity;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.EverySwipLogEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.GetInfo;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.SwipCardLog;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.UserInfo;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db.EverySwipLogHelper;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db.RealmHelper;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.CardUtils;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant;
@@ -151,6 +153,13 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         mMapView = (MapView) findViewById(R.id.mp_fence);
         mMapView.onCreate(savedInstanceState);
         initFence();
+
+        RealmHelper realmHelper = new RealmHelper(mContext);
+        int number = realmHelper.getIncarCount();
+
+        mTvNowCount.setText(number+"人");
+        Logger.d("实时人数：" + number);
+        realmHelper.close();
 
     }
 
@@ -452,9 +461,19 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 e.printStackTrace();
             }
 
+            EverySwipLogEntity everySwipLogEntity = new EverySwipLogEntity();
+            everySwipLogEntity.setCardnumber(cardNumberString);
+            everySwipLogEntity.setSwipcartime(new Timestamp(System.currentTimeMillis()).toString());
+            everySwipLogEntity.setLatitude(myLatLng.latitude+"");
+            everySwipLogEntity.setLongitude(myLatLng.longitude+"");
+
+            EverySwipLogHelper mEverySwipLogHelper = new EverySwipLogHelper(mContext);
+            mEverySwipLogHelper.addSwipLog(everySwipLogEntity);
+            mEverySwipLogHelper.close();
             //requestInfo(cardNumberString, handler);
             //处理逻辑
             ProcessSwipLog(cardNumberString, handler);
+
 
         }
 

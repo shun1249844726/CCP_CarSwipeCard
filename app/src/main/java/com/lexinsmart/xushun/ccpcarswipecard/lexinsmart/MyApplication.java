@@ -5,6 +5,8 @@ import android.app.Application;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db.RealmHelper;
 import com.orhanobut.logger.Logger;
 
+import java.text.SimpleDateFormat;
+
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 
@@ -19,9 +21,13 @@ public class MyApplication  extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd");
+        java.util.Date date=new java.util.Date();
+        String str=sdf.format(date);
+
         Realm.init(this);
         RealmConfiguration configuration=new RealmConfiguration.Builder()
-                .name(RealmHelper.DB_NAME)
+                .name(str+RealmHelper.DB_NAME)
                 .directory(getExternalFilesDir(null))
                 .deleteRealmIfMigrationNeeded()
                 .build();

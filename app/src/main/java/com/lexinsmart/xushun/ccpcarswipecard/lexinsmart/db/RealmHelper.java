@@ -4,6 +4,8 @@ import android.content.Context;
 
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.SwipCardLog;
 
+import java.text.SimpleDateFormat;
+
 import io.realm.Realm;
 import io.realm.RealmResults;
 
@@ -14,6 +16,7 @@ import io.realm.RealmResults;
  */
 
 public class RealmHelper {
+
     public static final String DB_NAME = "swiplog.realm";
 
     private Realm mRealm;
