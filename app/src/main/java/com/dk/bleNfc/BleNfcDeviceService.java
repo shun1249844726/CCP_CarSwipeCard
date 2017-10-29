@@ -113,7 +113,8 @@ public class BleNfcDeviceService extends Service {
             if (deviceManagerCallback != null) {
                 deviceManagerCallback.onReceiveDisConnectDevice(blnIsDisConnectDevice);
             }
-            //startScanAndConnectTheNearestDevice();
+            //设备断开连接后自动重连
+            startScanAndConnectTheNearestDevice();
             Log.d(TAG, "BleNfcDeviceService设备断开链接");
         }
 

@@ -163,7 +163,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             settings.setMyLocationButtonEnabled(true);
             mAMap.setMyLocationEnabled(true);
 
-            mAMap.moveCamera(CameraUpdateFactory.zoomBy(5));
+            mAMap.moveCamera(CameraUpdateFactory.zoomBy(6));
             setUpMap();
         }
 
