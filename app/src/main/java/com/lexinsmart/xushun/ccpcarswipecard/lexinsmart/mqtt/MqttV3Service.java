@@ -13,6 +13,7 @@ import com.ibm.micro.client.mqttv3.MqttTopic;
 import java.util.ArrayList;
 import java.util.logging.Logger;
 
+
 public class MqttV3Service {
     String addr = "";
     String port = "";
@@ -64,7 +65,6 @@ public class MqttV3Service {
         MqttMessage message = new MqttMessage(msg.getBytes());
         message.setQos(Qos);
         MqttDeliveryToken token;
-        com.orhanobut.logger.Logger.d("msg:"+msg);
         try {
             token = topicList.get(position).publish(message);
             while (!token.isComplete()) {
@@ -89,3 +89,4 @@ public class MqttV3Service {
         }
     }
 }
+

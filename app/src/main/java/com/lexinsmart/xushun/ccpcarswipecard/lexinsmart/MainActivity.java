@@ -60,11 +60,13 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.ibm.micro.client.mqttv3.MqttException;
 import com.lexinsmart.xushun.ccpcarswipecard.R;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.CheckPermissionsActivity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.AckRequireOk;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.EverySwipLogEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.GetInfo;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.RefreshTimeEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.RequireInfoEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.SwipCardLog;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.UserInfo;
@@ -201,13 +203,11 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             }
             String topic = telephonemanage.getDeviceId();
             topicList.add("ccp/remote_card/" + topic);
+            Logger.d("topic:" + topic);
 
         } catch (Exception e) {
             Log.i("error", e.getMessage());
         }
-        new Thread(new MqttProcThread()).start();//开始MQTT
-
-
     }
 
     private void initFence() {
@@ -706,8 +706,9 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         if (!mRealmHelper.isLogExist(cardNumberString)) { //没有记录
             if (inFactory) {
-                info += "下班 厂内上车";
+                info += "下班 厂内上车 ——send";
                 goOnOrGooff = Constant.GOOFF;
+                sendRefreshTime(-1, cardNumberString, new Timestamp(System.currentTimeMillis()).toString());
             } else {
                 info += "上班 厂外上车";
                 goOnOrGooff = Constant.GOTO;
@@ -721,7 +722,9 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             Gson gson = new Gson();
             String s = gson.toJson(requireInfoEntity);
             Logger.json(s);
+
             MqttV3Service.publishMsg(s, Qos, 0);
+
 
             //     getUserInfo(mRealmHelper, cardNumberString, handler, 1, goOnOrGooff); //第一次 刷卡
 
@@ -738,7 +741,9 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             logNew.setCardnum(log.getCardnum());
             logNew.setStaffnum(log.getStaffnum());
             logNew.setGetOnTime(log.getGetOnTime());
-            logNew.setGetOffTime((new Timestamp(System.currentTimeMillis())).toString());
+//            logNew.setGetOffTime((new Timestamp(System.currentTimeMillis())).toString());
+            logNew.setGetOffTime(log.getGetOffTime());
+
             logNew.setSwipCount(count + 1);
             logNew.setGetUpOrOff(goOnOrGooff);
 
@@ -749,19 +754,28 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                     Logger.d("send:" + log);//TODO 在这里发送数据。
                     info += "上班-厂内-下车->send";
                     logNew.setGetOnFlag(false);
+                    logNew.setGetOffTime(new Timestamp(System.currentTimeMillis()).toString());
+
+                    sendRefreshTime(1, cardNumberString, logNew.getGetOffTime());
 
                 } else if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 1 && !goOnOrGooff) {
                     info += "下班 厂内 又下车了 ";
                     logNew.setGetOnFlag(false);
+                    logNew.setGetOffTime(new Timestamp(System.currentTimeMillis()).toString());
+
 
                 } else if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 0 && goOnOrGooff) { //下班 又上车了
                     info += "上班 场内 刷了多次 上车";
                     logNew.setGetOnFlag(true);
+                    logNew.setGetOnTime(new Timestamp(System.currentTimeMillis()).toString());
+
 
                 } else if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 0 && !goOnOrGooff) {
                     Logger.d("send:" + log);//TODO 在这里发送数据。
                     info += "下班 厂内 又上车 ->send";
                     logNew.setGetOnFlag(true);
+                    logNew.setGetOffTime(new Timestamp(System.currentTimeMillis()).toString());
+                    sendRefreshTime(-1, cardNumberString, logNew.getGetOnTime());
 
                 }
 
@@ -770,18 +784,25 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 1 && goOnOrGooff) { //厂外 上班 下车
                     info += "上班-厂外-下车 ";
                     logNew.setGetOnFlag(false);
+                    logNew.setGetOffTime(new Timestamp(System.currentTimeMillis()).toString());
+
 
                 } else if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 1 && !goOnOrGooff) { //下班回家到家了
                     info += "下班-厂外-下车";
                     logNew.setGetOnFlag(false);
+                    logNew.setGetOffTime(new Timestamp(System.currentTimeMillis()).toString());
+
 
                 } else if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 0 && goOnOrGooff) { //
                     info += "上班-厂外-又上车";
                     logNew.setGetOnFlag(true);
+                    logNew.setGetOnTime(new Timestamp(System.currentTimeMillis()).toString());
 
                 } else if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 0 && !goOnOrGooff) {
                     info += "下班-厂外-又上车";
                     logNew.setGetOnFlag(true);
+                    logNew.setGetOnTime(new Timestamp(System.currentTimeMillis()).toString());
+
 
                 }
 
@@ -809,6 +830,31 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         handler.sendMessage(msg);
         Logger.d(info);
 
+    }
+
+    /**
+     * 发送更新数据；
+     *
+     * @param direction
+     * @param cardno
+     * @param time
+     */
+    public void sendRefreshTime(int direction, String cardno, String time) {
+        RefreshTimeEntity refreshTimeEntity = new RefreshTimeEntity();
+        refreshTimeEntity.setCmd_type("refresh_time");
+
+        RefreshTimeEntity.ContentBean contentBean = new RefreshTimeEntity.ContentBean();
+        contentBean.setCard_number(cardno);
+        contentBean.setDirection(direction);
+        contentBean.setTime(time);
+
+        refreshTimeEntity.setContent(contentBean);
+
+
+        Gson gson = new Gson();
+        String s = gson.toJson(refreshTimeEntity);
+
+        MqttV3Service.publishMsg(s, Qos, 0);
     }
 
     /**
@@ -1124,6 +1170,16 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         }
 
         mMapView.onResume();
+        if (MqttV3Service.client == null) {
+            new Thread(new MqttProcThread()).start();//如果没有 则连接
+        } else if (!MqttV3Service.isConnected()) {
+            try {
+                MqttV3Service.client.connect();
+            } catch (MqttException e) {
+                e.printStackTrace();
+            }
+        }
+
     }
 
     @Override
@@ -1155,6 +1211,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         unbindService(mServiceConnection);
 
         mMapView.onDestroy();
+        MqttV3Service.closeMqtt();
     }
 
     @Override
@@ -1276,8 +1333,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
 
                                     int number = realmHelper.getIncarCount();
-                                    mMainTvName.setText("姓名:"+name);
-                                    mMainTvStaffNum.setText("工号:"+staffnumber);
+                                    mMainTvName.setText("姓名:" + name);
+                                    mMainTvStaffNum.setText("工号:" + staffnumber);
                                     mTvNowCount.setText(number + "人");
                                     Logger.d("实时人数：" + number);
                                     realmHelper.close();
@@ -1285,6 +1342,13 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                                 }
 
                             } else { //失败 失败解析
+
+                            }
+                        } else if (cmd_type.equals("ack_refresh")) {
+                            Logger.d("ack_refresh");
+
+                            if (status_code == 0) {
+                                Logger.d("更新成功：");
 
                             }
                         }
