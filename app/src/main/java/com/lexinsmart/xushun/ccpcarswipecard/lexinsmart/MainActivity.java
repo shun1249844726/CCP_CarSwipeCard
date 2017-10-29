@@ -1,5 +1,6 @@
 package com.lexinsmart.xushun.ccpcarswipecard.lexinsmart;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -8,6 +9,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -16,9 +18,10 @@ import android.os.IBinder;
 import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
-import android.support.v7.app.AppCompatActivity;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.Toolbar;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -27,6 +30,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
@@ -52,22 +56,29 @@ import com.dk.bleNfc.DeviceManager.DeviceManager;
 import com.dk.bleNfc.DeviceManager.DeviceManagerCallback;
 import com.dk.bleNfc.Exception.DeviceNoResponseException;
 import com.dk.bleNfc.Tool.StringTool;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.lexinsmart.xushun.ccpcarswipecard.R;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.CheckPermissionsActivity;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.AckRequireOk;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.EverySwipLogEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.GetInfo;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.RequireInfoEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.SwipCardLog;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.UserInfo;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db.EverySwipLogHelper;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db.RealmHelper;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.mqtt.MqttV3Service;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.CardUtils;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.DateUtils;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.JsonUtils;
 import com.orhanobut.logger.Logger;
 
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -82,7 +93,7 @@ import butterknife.OnClick;
  * 心情：
  */
 
-public class MainActivity extends CheckPermissionsActivity implements LocationSource,AMapLocationListener {
+public class MainActivity extends CheckPermissionsActivity implements LocationSource, AMapLocationListener {
     BleNfcDeviceService mBleNfcDeviceService;
     @BindView(R.id.toolbar)
     Toolbar mToolbar;
@@ -125,13 +136,23 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     private MapView mMapView;
     private Polygon mPolygon;
     private AMapLocationClient mLocationClient = null;
-    private AMapLocationClientOption mLocationClientOption =null;
+    private AMapLocationClientOption mLocationClientOption = null;
 
     private LocationSource.OnLocationChangedListener mListener = null;
     private AMapLocationClient mlocationClient;
     private AMapLocationClientOption mLocationOption;
 
     private LatLng myLatLng = null;
+
+
+    //Mqtt
+    ArrayList<String> topicList = new ArrayList<String>();
+    int Qos = 1;
+
+
+    String cardNumberString = "";
+    boolean goOnOrGooff = false; // 下班 false  上班；true
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -154,18 +175,44 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         mMapView.onCreate(savedInstanceState);
         initFence();
 
+
+        //查询已经有的实时人数
         RealmHelper realmHelper = new RealmHelper(mContext);
         int number = realmHelper.getIncarCount();
-
-        mTvNowCount.setText(number+"人");
+        mTvNowCount.setText(number + "人");
         Logger.d("实时人数：" + number);
         realmHelper.close();
+
+
+        // MQTT
+
+        TelephonyManager telephonemanage = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
+
+        try {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return;
+            }
+            String topic = telephonemanage.getDeviceId();
+            topicList.add("ccp/remote_card/" + topic);
+
+        } catch (Exception e) {
+            Log.i("error", e.getMessage());
+        }
+        new Thread(new MqttProcThread()).start();//开始MQTT
+
 
     }
 
     private void initFence() {
 
-        if(mAMap == null){
+        if (mAMap == null) {
             mAMap = mMapView.getMap();
             UiSettings settings = mAMap.getUiSettings();
             mAMap.setLocationSource(this);
@@ -196,6 +243,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         //启动定位
         mLocationClient.startLocation();
     }
+
     /**
      * 设置一些amap的属性
      */
@@ -229,6 +277,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 .fillColor(Color.argb(50, 1, 1, 1)));
 
     }
+
     @OnClick(R.id.btn_submit)
     void submit(View view) {
         Logger.d("submit");
@@ -236,6 +285,11 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         realmHelper.clearAll();
         realmHelper.close();
+
+        mMainTvStaffNum.setText("工号:--");
+        mMainTvName.setText("姓名:--");
+        mTvNowCount.setText("0人");
+        mTvInfo.setText("");
     }
 
     @Override
@@ -451,7 +505,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
 //            System.out.println("Activity接收到激活卡片回调：UID->" + StringTool.byteHexToSting(bytCardSn) + " ATS->" + StringTool.byteHexToSting(bytCarATS));
             int cardNumber = CardUtils.bytesToInt(bytCardSn, 0);
-            String cardNumberString = CardUtils.cardAddZero(cardNumber);
+            cardNumberString = CardUtils.cardAddZero(cardNumber);
             //获取补0后的卡号
             System.out.println("卡号为:" + cardNumberString);
 
@@ -464,8 +518,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             EverySwipLogEntity everySwipLogEntity = new EverySwipLogEntity();
             everySwipLogEntity.setCardnumber(cardNumberString);
             everySwipLogEntity.setSwipcartime(new Timestamp(System.currentTimeMillis()).toString());
-            everySwipLogEntity.setLatitude(myLatLng.latitude+"");
-            everySwipLogEntity.setLongitude(myLatLng.longitude+"");
+            everySwipLogEntity.setLatitude(myLatLng.latitude + "");
+            everySwipLogEntity.setLongitude(myLatLng.longitude + "");
 
             EverySwipLogHelper mEverySwipLogHelper = new EverySwipLogHelper(mContext);
             mEverySwipLogHelper.addSwipLog(everySwipLogEntity);
@@ -601,7 +655,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                         RealmHelper realmHelper = new RealmHelper(mContext);
                         int number = realmHelper.getIncarCount();
 
-                        mTvNowCount.setText(number+"人");
+                        mTvNowCount.setText(number + "人");
                         Logger.d("实时人数：" + number);
                         realmHelper.close();
                         break;
@@ -641,6 +695,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
     /**
      * 处理刷卡记录，判断进出，记录时间，上传信息。
+     *
      * @param cardNumberString
      * @param handler
      */
@@ -648,7 +703,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         String info = "";
         RealmHelper mRealmHelper = new RealmHelper(mContext);
         boolean inFactory = mPolygon.contains(myLatLng);   //是否在围栏位置内。
-        boolean goOnOrGooff = false; // 下班 false  上班；true
 
         if (!mRealmHelper.isLogExist(cardNumberString)) { //没有记录
             if (inFactory) {
@@ -659,7 +713,17 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 goOnOrGooff = Constant.GOTO;
             }
 
-            getUserInfo(mRealmHelper,cardNumberString,handler,1,goOnOrGooff); //第一次 刷卡
+            RequireInfoEntity requireInfoEntity = new RequireInfoEntity();
+            requireInfoEntity.setCmd_type("require_info");
+            RequireInfoEntity.ContentBean contentBean = new RequireInfoEntity.ContentBean();
+            contentBean.setCard_number(cardNumberString);
+            requireInfoEntity.setContent(contentBean);
+            Gson gson = new Gson();
+            String s = gson.toJson(requireInfoEntity);
+            Logger.json(s);
+            MqttV3Service.publishMsg(s, Qos, 0);
+
+            //     getUserInfo(mRealmHelper, cardNumberString, handler, 1, goOnOrGooff); //第一次 刷卡
 
         } else {//存在记录
 
@@ -667,7 +731,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
             SwipCardLog log = mRealmHelper.qurryLogByCardNum(cardNumberString);
             int count = mRealmHelper.getSwipCount(cardNumberString);
-            Logger.d("count:"+count);
+            Logger.d("count:" + count);
 
             SwipCardLog logNew = new SwipCardLog();
             logNew.setName(log.getName());
@@ -675,26 +739,26 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             logNew.setStaffnum(log.getStaffnum());
             logNew.setGetOnTime(log.getGetOnTime());
             logNew.setGetOffTime((new Timestamp(System.currentTimeMillis())).toString());
-            logNew.setSwipCount(count+1);
+            logNew.setSwipCount(count + 1);
             logNew.setGetUpOrOff(goOnOrGooff);
 
             if (inFactory) {
 
                 // go on or go of  下班 false  上班；true
-                if (mRealmHelper.getSwipCount(cardNumberString)%2 == 1 && goOnOrGooff){ //下车了 上班 ，场内
+                if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 1 && goOnOrGooff) { //下车了 上班 ，场内
                     Logger.d("send:" + log);//TODO 在这里发送数据。
                     info += "上班-厂内-下车->send";
                     logNew.setGetOnFlag(false);
 
-                }else if (mRealmHelper.getSwipCount(cardNumberString) %2 ==1 && !goOnOrGooff){
+                } else if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 1 && !goOnOrGooff) {
                     info += "下班 厂内 又下车了 ";
                     logNew.setGetOnFlag(false);
 
-                }else if (mRealmHelper.getSwipCount(cardNumberString) %2 == 0 && goOnOrGooff){ //下班 又上车了
+                } else if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 0 && goOnOrGooff) { //下班 又上车了
                     info += "上班 场内 刷了多次 上车";
                     logNew.setGetOnFlag(true);
 
-                }else if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 0 && !goOnOrGooff){
+                } else if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 0 && !goOnOrGooff) {
                     Logger.d("send:" + log);//TODO 在这里发送数据。
                     info += "下班 厂内 又上车 ->send";
                     logNew.setGetOnFlag(true);
@@ -703,19 +767,19 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
             } else {
                 // go on or go of  下班 false  上班；true
-                if (mRealmHelper.getSwipCount(cardNumberString)%2 == 1 && goOnOrGooff){ //厂外 上班 下车
+                if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 1 && goOnOrGooff) { //厂外 上班 下车
                     info += "上班-厂外-下车 ";
                     logNew.setGetOnFlag(false);
 
-                }else if (mRealmHelper.getSwipCount(cardNumberString) %2 ==1 && !goOnOrGooff){ //下班回家到家了
+                } else if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 1 && !goOnOrGooff) { //下班回家到家了
                     info += "下班-厂外-下车";
                     logNew.setGetOnFlag(false);
 
-                }else if (mRealmHelper.getSwipCount(cardNumberString) %2 == 0 && goOnOrGooff){ //
+                } else if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 0 && goOnOrGooff) { //
                     info += "上班-厂外-又上车";
                     logNew.setGetOnFlag(true);
 
-                }else if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 0 && !goOnOrGooff){
+                } else if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 0 && !goOnOrGooff) {
                     info += "下班-厂外-又上车";
                     logNew.setGetOnFlag(true);
 
@@ -749,13 +813,14 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
     /**
      * 从网络中获取到用户信息。
+     *
      * @param realmHelper
      * @param cardNumberString
      * @param mHandler
      * @param swipcount
      * @param getUpOrOff
      */
-    private void getUserInfo(RealmHelper realmHelper,String cardNumberString, Handler mHandler, int swipcount, boolean getUpOrOff) {
+    private void getUserInfo(RealmHelper realmHelper, String cardNumberString, Handler mHandler, int swipcount, boolean getUpOrOff) {
 
         int max = 20;
         int min = 10;
@@ -1060,12 +1125,14 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         mMapView.onResume();
     }
+
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         //在activity执行onSaveInstanceState时执行mMapView.onSaveInstanceState (outState)，实现地图生命周期管理
         mMapView.onSaveInstanceState(outState);
     }
+
     @Override
     protected void onPause() {
         super.onPause();
@@ -1097,7 +1164,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 mListener.onLocationChanged(amapLocation);// 显示系统小蓝点
 
                 //经纬度：   [词典]	longitude and latitude
-                myLatLng = new LatLng(amapLocation.getLatitude(),amapLocation.getLongitude());
+                myLatLng = new LatLng(amapLocation.getLatitude(), amapLocation.getLongitude());
             } else {
                 String errText = "定位失败," + amapLocation.getErrorCode() + ": "
                         + amapLocation.getErrorInfo();
@@ -1135,4 +1202,103 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         }
         mlocationClient = null;
     }
+
+    public class MqttProcThread implements Runnable {
+
+        String clientid = "CCP_SwipCard";
+
+        @Override
+        public void run() {
+            Message msg = new Message();
+            boolean ret = MqttV3Service.connectionMqttServer(myHandler, Constant.MQTT_ADDRESS, Constant.MQTT_PORT, clientid, topicList);
+            if (ret) {
+                msg.what = 1;
+            } else {
+                msg.what = 0;
+            }
+            msg.obj = "strresult";
+            myHandler.sendMessage(msg);
+        }
+    }
+
+
+    @SuppressWarnings("HandlerLeak")
+    private Handler myHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            if (msg.what == 1) {
+                Toast.makeText(mContext, "连接成功", Toast.LENGTH_SHORT).show();
+
+            } else if (msg.what == 0) {
+                Toast.makeText(mContext, "连接失败", Toast.LENGTH_SHORT).show();
+            } else if (msg.what == 2) {
+                String strContent = "";
+                strContent += msg.getData().getString("content");
+
+                Logger.d("strcontent:" + strContent);
+
+                if (strContent.contains("ack_")) {
+                    if (JsonUtils.isGoodJson(strContent)) {
+                        JsonParser jsonParser = new JsonParser();
+                        JsonObject jsonObject = jsonParser.parse(strContent).getAsJsonObject();
+                        String cmd_type = jsonObject.get("cmd_type").getAsString();
+                        int status_code = jsonObject.get("status_code").getAsInt();
+//                        Logger.d("jsonObject.get(\"cmd_type\")   "+cmd_type);
+//                        Logger.d("jsonObject.get(\"status_code\")   "+status_code);
+
+                        if (cmd_type.equals("ack_require")) { //请求个人信息 返回
+                            Logger.d("ack_require");
+                            if (status_code == 0) { //成功
+                                Logger.d("请求个人信息成功：");
+                                Gson gson = new Gson();
+                                AckRequireOk ackRequireOk = gson.fromJson(strContent, AckRequireOk.class);
+                                Logger.json(strContent);
+
+                                String name = ackRequireOk.getContent().getName();
+                                String staffnumber = ackRequireOk.getContent().getStaff_number();
+                                String cardnumber = ackRequireOk.getContent().getCard_number();
+
+                                if (cardNumberString.equals(cardnumber)) {
+                                    Logger.d("卡号一致！");
+
+                                    SwipCardLog swipCardLog = new SwipCardLog();
+                                    swipCardLog.setName(name);
+                                    swipCardLog.setCardnum(cardNumberString);
+                                    swipCardLog.setStaffnum(staffnumber);
+                                    swipCardLog.setGetOnTime(new Timestamp(System.currentTimeMillis()).toString());
+                                    swipCardLog.setGetOnFlag(true);
+                                    swipCardLog.setSwipCount(1);
+                                    swipCardLog.setGetUpOrOff(goOnOrGooff);
+
+                                    RealmHelper realmHelper = new RealmHelper(mContext);
+                                    realmHelper.addSwipLog(swipCardLog);
+
+
+                                    int number = realmHelper.getIncarCount();
+                                    mMainTvName.setText("姓名:"+name);
+                                    mMainTvStaffNum.setText("工号:"+staffnumber);
+                                    mTvNowCount.setText(number + "人");
+                                    Logger.d("实时人数：" + number);
+                                    realmHelper.close();
+
+                                }
+
+                            } else { //失败 失败解析
+
+                            }
+                        }
+                    }
+                }
+
+
+            } else if (msg.what == 3) {
+                if (MqttV3Service.closeMqtt()) {
+                    Toast.makeText(mContext, "断开连接", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+    };
+
+
 }
