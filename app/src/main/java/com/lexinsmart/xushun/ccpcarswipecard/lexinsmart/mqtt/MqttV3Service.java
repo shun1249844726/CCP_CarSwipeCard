@@ -34,9 +34,11 @@ public class MqttV3Service {
             MqttConnectOptions conOptions = new MqttConnectOptions();
 //			conOptions.setUserName(MyApplication.gUserName);
 //			conOptions.setPassword(Pssword.toCharArray());
-            conOptions.setCleanSession(true);
+            conOptions.setCleanSession(true);            // 设置是否清空session,这里如果设置为false表示服务器会保留客户端的连接记录，这里设置为true表示每次连接到服务器都以新的身份连接
 //			char[] ddd = conOptions.getPassword();
 //			System.out.println(ddd);
+            // 设置会话心跳时间 单位为秒 服务器会每隔1.5*20秒的时间向客户端发送个消息判断客户端是否在线，但这个方法并没有重连的机制
+            conOptions.setKeepAliveInterval(20);
             client.connect(conOptions);
             for (int i = 0; i < Topics.size(); i++) {
                 client.subscribe(Topics.get(i), 1);
@@ -61,29 +63,63 @@ public class MqttV3Service {
     }
 
     public static boolean publishMsg(String msg, int Qos, int position) {
+        boolean successfulFlag = false;
         MqttMessage message = new MqttMessage(msg.getBytes());
         message.setQos(Qos);
-        MqttDeliveryToken token;
+        MqttDeliveryToken token = null;
         try {
             token = topicList.get(position).publish(message);
             while (!token.isComplete()) {
                 token.waitForCompletion(1000);
             }
+            successfulFlag = true;
         } catch (MqttPersistenceException e) {
             // TODO 自动生成的 catch 块
             e.printStackTrace();
-            return false;
+//            return false;
+            successfulFlag = false;
         } catch (MqttException e) {
-            // TODO 自动生成的 catch 块
+            System.err.println("Failed to send message");
             e.printStackTrace();
-            return false;
+//            return false;
+            successfulFlag = false;
         }
-        return true;
+        System.out.println("go on connect "+ token.isComplete());
+        if (token != null) {
+            boolean keepTrying = true;
+            do {
+                try {
+                    // Wait for the message delivery to complete
+                    token.waitForCompletion(1000);
+                    successfulFlag = true;
+                    System.out.println("Message delivery complete");
+                } catch (MqttException deliveryException) {
+                    int reasonCode = deliveryException.getReasonCode();
+
+                    // TODO: Retry the message, or decide to stop trying
+                    System.err.println("Message delivery failed");
+                    if (client.isConnected() == false) {
+                        try {
+                            // Re-connect to the server
+                            client.connect();
+                        } catch (MqttException connectException) {
+                            // Can't reconnect, so give up.  If and when the
+                            // client does reconnect, the message delivery
+                            // will automatically continue
+                            keepTrying = false;
+                        }
+                    }
+                }
+            } while (!token.isComplete() && keepTrying);
+        }
+        return successfulFlag;
+
     }
-    public static boolean isConnected(){
-        if (client.isConnected()){
+
+    public static boolean isConnected() {
+        if (client.isConnected()) {
             return true;
-        }else {
+        } else {
             return false;
         }
     }

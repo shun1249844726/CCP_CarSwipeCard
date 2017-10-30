@@ -169,6 +169,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
     String cardNumberString = "";
     boolean goOnOrGooff = false; // 下班 false  上班；true
+    String topic = null;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -182,7 +183,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         mContext = this;
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        toolbar.setVisibility(View.GONE);
+//        toolbar.setVisibility(View.GONE);
 
         msgBuffer = new StringBuffer();
         //ble_nfc服务初始化
@@ -203,27 +204,12 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
 
         // MQTT
-
         TelephonyManager telephonemanage = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
 
-        try {
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
-                return;
-            }
-            String topic = telephonemanage.getDeviceId();
-            topicList.add("ccp/remote_card/" + topic);
-            Logger.d("topic:" + topic);
+        topic = Constant.IMEI;
+        topicList.add("ccp/remote_card/test/" + topic);
+        Logger.d("topic:" + topic);
 
-        } catch (Exception e) {
-            Log.i("error", e.getMessage());
-        }
 
         mLlBluetoothStatus.setOnClickListener(llBluetoothClickListener);
         mLlNetStatus.setOnClickListener(llnetClickListener);
@@ -234,11 +220,14 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         @Override
         public void onClick(View v) {
 
-//            if (!MqttV3Service.isConnected()) {
-//                MqttV3Service.closeMqtt();
-//                new Thread(new MqttProcThread()).start();//如果没有 则连接
-//
-//            }
+            //TODO  重连MQTT
+            if (!MqttV3Service.isConnected()) {
+//                try {
+//                    MqttV3Service.client.connect();
+//                } catch (MqttException e) {
+//                    e.printStackTrace();
+//                }
+            }
         }
     };
 
@@ -313,8 +302,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         // 绘制一个长方形
         PolygonOptions pOption = new PolygonOptions();
-        pOption.add(new LatLng(31.742479, 121.024111));
-        pOption.add(new LatLng(31.73877, 121.021493));
+        pOption.add(new LatLng(31.7424590000, 121.0241830000));
+        pOption.add(new LatLng(31.7387130000, 121.0214960000));
         pOption.add(new LatLng(31.742051, 121.014358));
         pOption.add(new LatLng(31.746293, 121.016569));
 
@@ -333,10 +322,10 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         realmHelper.clearAll();
         realmHelper.close();
 
-        mMainTvStaffNum.setText("工号:--");
-        mMainTvName.setText("姓名:--");
-        mTvNowCount.setText("0人");
-        mTvInfo.setText("");
+        mMainTvStaffNum.setText("— —");
+        mMainTvName.setText("— —");
+        mTvNowCount.setText("0 人");
+        mTvInfo.setText("提示信息");
     }
 
     @Override
@@ -362,8 +351,16 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         if (id == R.id.action_map_showHide) {
             if (mMapView.getVisibility() == View.GONE) {
                 mMapView.setVisibility(View.VISIBLE);
+                mCardview1.setVisibility(View.GONE);
+                mCardview2.setVisibility(View.GONE);
+                mBtnSubmit.setVisibility(View.GONE);
+
             } else if (mMapView.getVisibility() == View.VISIBLE) {
                 mMapView.setVisibility(View.GONE);
+                mCardview2.setVisibility(View.VISIBLE);
+                mCardview2.setVisibility(View.VISIBLE);
+                mBtnSubmit.setVisibility(View.VISIBLE);
+
             }
         }
 
@@ -780,6 +777,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             Gson gson = new Gson();
             String s = gson.toJson(requireInfoEntity);
             Logger.json(s);
+
 
             MqttV3Service.publishMsg(s, Qos, 0);
 
@@ -1320,7 +1318,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
     public class MqttProcThread implements Runnable {
 
-        String clientid = "CCP_SwipCard";
+        String clientid = "CCP"+Constant.IMEI;
 
         @Override
         public void run() {

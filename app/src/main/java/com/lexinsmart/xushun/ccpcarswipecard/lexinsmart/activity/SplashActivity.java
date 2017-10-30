@@ -1,11 +1,16 @@
 package com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.telephony.TelephonyManager;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -16,6 +21,8 @@ import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.update.AppUtils;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.update.CheckIfNeedUpdate;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.update.OnGetVersionListener;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.update.UpdateChecker;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant;
+import com.orhanobut.logger.Logger;
 import com.wang.avi.AVLoadingIndicatorView;
 
 import butterknife.BindView;
@@ -47,6 +54,25 @@ public class SplashActivity extends AppCompatActivity {
         mAvi.show();
         mTvAppversion.setText(AppUtils.getVersionName(mContext));
 
+        TelephonyManager telephonemanage = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
+
+        try {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return;
+            }
+            Constant.IMEI = telephonemanage.getDeviceId();
+
+        } catch (Exception e) {
+            Log.i("error", e.getMessage());
+        }
+
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -62,14 +88,12 @@ public class SplashActivity extends AppCompatActivity {
                         } else {
                             Intent intent = new Intent(SplashActivity.this, MainActivity.class);
                             startActivity(intent);
-                            finish();
                         }
                     }
 
                     @Override
                     public void onDataFailed() {
                         System.out.println("onDataFailed");
-
                     }
                 });
                 checkIfNeedUpdate.execute();

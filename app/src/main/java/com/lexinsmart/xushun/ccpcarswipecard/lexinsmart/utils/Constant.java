@@ -22,4 +22,6 @@ public class Constant {
     public static final String MQTT_ADDRESS = "120.92.84.64";
     public static final String MQTT_PORT = "1883";
 
+    public static String IMEI = "";
+
 }
