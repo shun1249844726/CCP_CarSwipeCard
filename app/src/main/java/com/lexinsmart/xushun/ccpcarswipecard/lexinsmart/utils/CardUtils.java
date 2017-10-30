@@ -14,7 +14,8 @@ public class CardUtils {
      */
     public static String cardAddZero(int cardnumber){
         String cardNum = ""+cardnumber;
-        int size = (""+cardnumber).length();
+        System.out.println(cardNum);
+        int size = cardNum.length();
 
         for (int i = 0;i<(10-size) ;i++){
             cardNum = "0"+cardNum;
@@ -22,6 +23,16 @@ public class CardUtils {
         return cardNum;
     }
 
+    public static String cardAddZeroLong(long cardnumber){
+        String cardNum = ""+cardnumber;
+        System.out.println(cardNum);
+        int size = cardNum.length();
+
+        for (int i = 0;i<(10-size) ;i++){
+            cardNum = "0"+cardNum;
+        }
+        return cardNum;
+    }
     /**
      * byte数组中取int数值，本方法适用于(低位在前，高位在后)的顺序，和和intToBytes（）配套使用
      *
@@ -40,6 +51,21 @@ public class CardUtils {
         return value;
     }
 
+    public static long bytesToLong(byte[] src, int offset) {
+        long value = 0;
+        long temp  ;
+        for (int i = 0;i<4;i++){
+             temp = (long)(src[3-i] & 0xff);
+             value <<= 8;
+             value |= temp;
+             System.out.println("temp:"+temp);
+        }
+//        value = (long) ((src[offset] & 0xFF)
+//                | ((src[offset+1] & 0xFF)<<8)
+//                | ((src[offset+2] & 0xFF)<<16)
+//                | ((src[offset+3] & 0xFF)<<24));
+        return value;
+    }
     /**
      * byte数组中取int数值，本方法适用于(低位在后，高位在前)的顺序。和intToBytes2（）配套使用
      */

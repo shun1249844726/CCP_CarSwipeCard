@@ -268,9 +268,11 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         // 绘制一个长方形
         PolygonOptions pOption = new PolygonOptions();
-        pOption.add(new LatLng(31.978761, 120.903709));
-        pOption.add(new LatLng(31.979339, 120.905897));
-        pOption.add(new LatLng(31.9774, 120.905173));
+        pOption.add(new LatLng(31.742479, 121.024111));
+        pOption.add(new LatLng(31.73877, 121.021493));
+        pOption.add(new LatLng(31.742051, 121.014358));
+        pOption.add(new LatLng(31.746293, 121.016569));
+
 
         mPolygon = mAMap.addPolygon(pOption.strokeWidth(4)
                 .strokeColor(Color.argb(50, 1, 1, 1))
@@ -503,9 +505,9 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 return;
             }
 
-//            System.out.println("Activity接收到激活卡片回调：UID->" + StringTool.byteHexToSting(bytCardSn) + " ATS->" + StringTool.byteHexToSting(bytCarATS));
-            int cardNumber = CardUtils.bytesToInt(bytCardSn, 0);
-            cardNumberString = CardUtils.cardAddZero(cardNumber);
+            System.out.println("Activity接收到激活卡片回调：UID->" + StringTool.byteHexToSting(bytCardSn) + " ATS->" + StringTool.byteHexToSting(bytCarATS));
+            long cardNumber = CardUtils.bytesToLong(bytCardSn, 0);
+            cardNumberString = CardUtils.cardAddZeroLong(cardNumber);
             //获取补0后的卡号
             System.out.println("卡号为:" + cardNumberString);
 
