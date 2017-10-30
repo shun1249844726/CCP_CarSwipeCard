@@ -3,7 +3,7 @@
       xmlns:tools="http://schemas.android.com/tools"
       tools:context="com.lexinsmart.xushun.myapplication.MainActivity">
     <item
-        android:id="@+id/bluetooth"
+        android:id="@+id/action_bluetooth"
         android:orderInCategory="100"
         android:icon="@mipmap/ic_bluetooth_no"
         android:title="@string/action_settings"
@@ -13,4 +13,8 @@
         android:orderInCategory="100"
         android:title="@string/action_settings"
         app:showAsAction="never"/>
+    <item android:id="@+id/action_map_showHide"
+          android:orderInCategory="100"
+          android:title="地图显示/关闭"
+          app:showAsAction="never"/>
 </menu>

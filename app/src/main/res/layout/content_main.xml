@@ -5,11 +5,80 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#95A792"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     tools:context=".lexinsmart.MainActivity"
-    android:background="#95A792"
-
     tools:showIn="@layout/activity_main">
+
+    <LinearLayout
+        android:id="@+id/ll_device_status"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="@color/colorPrimary"
+        android:orientation="horizontal"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:id="@+id/ll_bluetooth_status"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="2"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/img_bluetooth_status"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@mipmap/ic_bluetooth_no"/>
+
+            <TextView
+                android:id="@+id/tv_bluetooth"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="设备连接状态"
+                android:textColor="@color/cardview_light_background"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/ll_net_status"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="2"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/img_net_status"
+                android:layout_width="35dp"
+                android:layout_height="35dp"
+                android:src="@mipmap/ic_net_disconn"/>
+            <TextView
+                android:id="@+id/tv_net_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/cardview_light_background"
+                android:text="网络连接状态"/>
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="horizontal">
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:src="@mipmap/ic_setting"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/cardview_light_background"
+                android:text="设置"/>
+        </LinearLayout>
+    </LinearLayout>
 
     <Spinner
         android:id="@+id/sp_type_select"
@@ -17,8 +86,8 @@
         android:layout_height="wrap_content"
         android:background="@android:color/holo_green_dark"
         android:entries="@array/types"
-        tools:layout_editor_absoluteX="8dp"
-        tools:layout_editor_absoluteY="0dp">
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/ll_device_status">
 
     </Spinner>
 
@@ -26,6 +95,7 @@
         android:id="@+id/ll_info"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
         android:gravity="center"
         android:orientation="horizontal"
         app:layout_constraintLeft_toLeftOf="parent"
@@ -38,7 +108,9 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="info："/>
+            android:text="提示信息："
+            android:textColor="@color/cardview_light_background"
+            android:textSize="25sp"/>
 
         <TextView
             android:id="@+id/tv_power"
@@ -46,16 +118,19 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="电池电压："/>
+            android:text="电池电压："
+            android:textColor="@color/cardview_light_background"
+            android:visibility="gone"/>
     </LinearLayout>
 
 
     <android.support.v7.widget.CardView
         android:id="@+id/cardview1"
         android:layout_width="0dp"
-        android:layout_height="150dp"
+        android:layout_height="250dp"
         android:layout_marginEnd="30dp"
         android:layout_marginStart="30dp"
+        android:layout_marginTop="20dp"
         app:cardCornerRadius="10dp"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
@@ -67,20 +142,47 @@
             android:gravity="center"
             android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/main_tv_name"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="姓名:——"
-                android:textSize="40sp"/>
+                android:gravity="center"
+                android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/main_tv_staffNum"
-                android:layout_width="wrap_content"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="right"
+                    android:text="姓名:  "
+                    android:textSize="40sp"/>
+
+                <TextView
+                    android:id="@+id/main_tv_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="— —"
+                    android:textSize="40sp"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text="工号:——"
-                android:textSize="40sp"/>
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="right"
+                    android:text="工号:  "
+                    android:textSize="40sp"/>
+
+                <TextView
+                    android:id="@+id/main_tv_staffNum"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="— —"
+                    android:textSize="40sp"/>
+            </LinearLayout>
         </LinearLayout>
 
     </android.support.v7.widget.CardView>
@@ -88,7 +190,7 @@
     <android.support.v7.widget.CardView
         android:id="@+id/cardview2"
         android:layout_width="0dp"
-        android:layout_height="120dp"
+        android:layout_height="150dp"
         android:layout_marginEnd="30dp"
         android:layout_marginStart="30dp"
         android:layout_marginTop="10dp"
@@ -105,39 +207,33 @@
 
             <LinearLayout
                 android:layout_width="0dp"
-                android:layout_weight="2"
-                android:layout_margin="10dp"
-
                 android:layout_height="wrap_content"
+                android:layout_margin="10dp"
+                android:layout_weight="2"
                 android:gravity="center"
-                android:orientation="vertical">
+                android:orientation="horizontal">
+
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="实时人数"/>
+                    android:layout_weight="2"
+                    android:gravity="center"
+                    android:text="实时人数:"
+                    android:textSize="40sp"/>
+
                 <TextView
                     android:id="@+id/tv_nowCount"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+
+                    android:layout_weight="1"
                     android:text="0人"
                     android:textSize="40sp"
                     app:layout_constraintLeft_toLeftOf="parent"
                     app:layout_constraintRight_toRightOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/cardview1"/>
             </LinearLayout>
-       >
-            <Button
-                android:layout_marginLeft="10dp"
-                android:layout_marginRight="20dp"
 
-                android:id="@+id/btn_submit"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:layout_width="0dp"
-                android:textColor="@android:color/white"
-                android:background="@drawable/btn_nor_down"
-                android:layout_height="wrap_content"
-                android:text="清空数据"/>
         </LinearLayout>
 
     </android.support.v7.widget.CardView>
@@ -145,14 +241,27 @@
 
     <com.amap.api.maps.MapView
         android:id="@+id/mp_fence"
-        android:layout_marginTop="10dp"
-        app:layout_constraintTop_toBottomOf="@id/cardview2"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="50"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        app:layout_constraintTop_toTopOf="parent">
 
     </com.amap.api.maps.MapView>
+
+    <Button
+        android:id="@+id/btn_submit"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:background="@drawable/btn_nor_down"
+        android:text="结束行程"
+        android:textColor="@android:color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cardview2"/>
 
 </android.support.constraint.ConstraintLayout>

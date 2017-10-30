@@ -58,7 +58,7 @@ public class CardUtils {
              temp = (long)(src[3-i] & 0xff);
              value <<= 8;
              value |= temp;
-             System.out.println("temp:"+temp);
+//             System.out.println("temp:"+temp);
         }
 //        value = (long) ((src[offset] & 0xFF)
 //                | ((src[offset+1] & 0xFF)<<8)

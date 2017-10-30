@@ -54,7 +54,6 @@ public class MqttV3Service {
         try {
             client.disconnect();
         } catch (MqttException e) {
-            // TODO 自动生成的 catch 块
             e.printStackTrace();
             return false;
         }

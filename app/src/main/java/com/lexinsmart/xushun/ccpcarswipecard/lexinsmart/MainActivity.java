@@ -28,6 +28,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -57,7 +59,6 @@ import com.dk.bleNfc.DeviceManager.DeviceManagerCallback;
 import com.dk.bleNfc.Exception.DeviceNoResponseException;
 import com.dk.bleNfc.Tool.StringTool;
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.ibm.micro.client.mqttv3.MqttException;
@@ -117,6 +118,20 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     TextView mTvNowCount;
     @BindView(R.id.tv_info)
     TextView mTvInfo;
+    @BindView(R.id.img_bluetooth_status)
+    ImageView mImgBluetoothStatus;
+    @BindView(R.id.tv_bluetooth)
+    TextView mTvBluetooth;
+    @BindView(R.id.ll_bluetooth_status)
+    LinearLayout mLlBluetoothStatus;
+    @BindView(R.id.img_net_status)
+    ImageView mImgNetStatus;
+    @BindView(R.id.tv_net_status)
+    TextView mTvNetStatus;
+    @BindView(R.id.ll_net_status)
+    LinearLayout mLlNetStatus;
+    @BindView(R.id.ll_device_status)
+    LinearLayout mLlDeviceStatus;
     private BleNfcDevice bleNfcDevice;
     private Scanner mScanner;
     private ProgressDialog readWriteDialog = null;
@@ -140,7 +155,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     private AMapLocationClient mLocationClient = null;
     private AMapLocationClientOption mLocationClientOption = null;
 
-    private LocationSource.OnLocationChangedListener mListener = null;
+    private OnLocationChangedListener mListener = null;
     private AMapLocationClient mlocationClient;
     private AMapLocationClientOption mLocationOption;
 
@@ -167,6 +182,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         mContext = this;
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        toolbar.setVisibility(View.GONE);
 
         msgBuffer = new StringBuffer();
         //ble_nfc服务初始化
@@ -208,7 +224,36 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         } catch (Exception e) {
             Log.i("error", e.getMessage());
         }
+
+        mLlBluetoothStatus.setOnClickListener(llBluetoothClickListener);
+        mLlNetStatus.setOnClickListener(llnetClickListener);
     }
+
+    View.OnClickListener llnetClickListener = new View.OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+
+//            if (!MqttV3Service.isConnected()) {
+//                MqttV3Service.closeMqtt();
+//                new Thread(new MqttProcThread()).start();//如果没有 则连接
+//
+//            }
+        }
+    };
+
+    View.OnClickListener llBluetoothClickListener = new View.OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+
+            if ((bleNfcDevice.isConnection() == BleManager.STATE_CONNECTED)) {
+                bleNfcDevice.requestDisConnectDevice();
+            } else {
+                searchNearestBleDevice();
+            }
+        }
+    };
 
     private void initFence() {
 
@@ -304,7 +349,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        if (id == R.id.bluetooth) {
+        if (id == R.id.action_bluetooth) {
             if ((bleNfcDevice.isConnection() == BleManager.STATE_CONNECTED)) {
                 bleNfcDevice.requestDisConnectDevice();
             } else {
@@ -313,6 +358,13 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         }
         if (id == R.id.action_settings) {
 
+        }
+        if (id == R.id.action_map_showHide) {
+            if (mMapView.getVisibility() == View.GONE) {
+                mMapView.setVisibility(View.VISIBLE);
+            } else if (mMapView.getVisibility() == View.VISIBLE) {
+                mMapView.setVisibility(View.GONE);
+            }
         }
 
         return super.onOptionsItemSelected(item);
@@ -644,20 +696,24 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                         break;
                     case 8:
                         toolbar.getMenu().getItem(0).setIcon(R.mipmap.ic_bluetooth_no);
+                        mImgBluetoothStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_bluetooth_no));
+                        mTvBluetooth.setText("设备未连接\n点击重连");
                         break;
                     case 9:
                         toolbar.getMenu().getItem(0).setIcon(R.mipmap.ic_bluetooth);
+                        mImgBluetoothStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_bluetooth));
+                        mTvBluetooth.setText("设备连接成功");
                         break;
                     case 10:
                         String name = msg.getData().getString("name");
-                        mMainTvName.setText("姓名:" + name);
-                        mMainTvStaffNum.setText("工号:" + msg.getData().getString("staffnum"));
+                        mMainTvName.setText(name);  //姓名
+                        mMainTvStaffNum.setText(msg.getData().getString("staffnum"));//工号
                         break;
                     case 11:
                         RealmHelper realmHelper = new RealmHelper(mContext);
                         int number = realmHelper.getIncarCount();
 
-                        mTvNowCount.setText(number + "人");
+                        mTvNowCount.setText(number + " 人");
                         Logger.d("实时人数：" + number);
                         realmHelper.close();
                         break;
@@ -1175,11 +1231,11 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         if (MqttV3Service.client == null) {
             new Thread(new MqttProcThread()).start();//如果没有 则连接
         } else if (!MqttV3Service.isConnected()) {
-            try {
-                MqttV3Service.client.connect();
-            } catch (MqttException e) {
-                e.printStackTrace();
-            }
+//            try {
+//                MqttV3Service.client.connect();
+//            } catch (MqttException e) {
+//                e.printStackTrace();
+//            }
         }
 
     }
@@ -1288,9 +1344,13 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             super.handleMessage(msg);
             if (msg.what == 1) {
                 Toast.makeText(mContext, "连接成功", Toast.LENGTH_SHORT).show();
+                mTvNetStatus.setText("网络连接成功");
+                mImgNetStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_net_ok));
 
             } else if (msg.what == 0) {
                 Toast.makeText(mContext, "连接失败", Toast.LENGTH_SHORT).show();
+                mTvNetStatus.setText("网络连接失败\n点击重连");
+                mImgNetStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_net_disconn));
             } else if (msg.what == 2) {
                 String strContent = "";
                 strContent += msg.getData().getString("content");
@@ -1335,8 +1395,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
 
                                     int number = realmHelper.getIncarCount();
-                                    mMainTvName.setText("姓名:" + name);
-                                    mMainTvStaffNum.setText("工号:" + staffnumber);
+                                    mMainTvName.setText(name); //  姓名
+                                    mMainTvStaffNum.setText(staffnumber); // 工号
                                     mTvNowCount.setText(number + "人");
                                     Logger.d("实时人数：" + number);
                                     realmHelper.close();
@@ -1359,12 +1419,12 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
 
             } else if (msg.what == 3) {
-                if (MqttV3Service.closeMqtt()) {
+                if (!MqttV3Service.client.isConnected()) {
                     Toast.makeText(mContext, "断开连接", Toast.LENGTH_SHORT).show();
+                    mImgNetStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_net_disconn));
+                    mTvNetStatus.setText("网络断开\n点击重连");
                 }
             }
         }
     };
-
-
 }
