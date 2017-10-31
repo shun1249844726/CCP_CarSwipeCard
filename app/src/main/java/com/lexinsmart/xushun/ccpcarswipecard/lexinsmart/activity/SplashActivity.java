@@ -1,6 +1,7 @@
 package com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity;
 
 import android.Manifest;
+import android.app.smdt.SmdtManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -22,6 +23,7 @@ import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.update.CheckIfNeedUpdate
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.update.OnGetVersionListener;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.update.UpdateChecker;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.UiUtils;
 import com.orhanobut.logger.Logger;
 import com.wang.avi.AVLoadingIndicatorView;
 
@@ -43,6 +45,9 @@ public class SplashActivity extends AppCompatActivity {
     Button mBtnGetInApp;
     @BindView(R.id.tv_appversion)
     TextView mTvAppversion;
+
+
+    private SmdtManager mSmdtManager;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -86,8 +91,8 @@ public class SplashActivity extends AppCompatActivity {
                             UpdateChecker.checkForDialog(SplashActivity.this);
 
                         } else {
-                            Intent intent = new Intent(SplashActivity.this, MainActivity.class);
-                            startActivity(intent);
+//                            Intent intent = new Intent(SplashActivity.this, MainActivity.class);
+//                            startActivity(intent);
                         }
                     }
 
@@ -105,5 +110,20 @@ public class SplashActivity extends AppCompatActivity {
     public void getInApp(){
         Intent intent = new Intent(SplashActivity.this, MainActivity.class);
         startActivity(intent);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        mSmdtManager = new SmdtManager(getApplicationContext());
+        mSmdtManager.smdtSetStatusBar(getApplicationContext(),false);
+        UiUtils.hideNavigate(this);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        mSmdtManager.smdtSetStatusBar(getApplicationContext(),true);
     }
 }

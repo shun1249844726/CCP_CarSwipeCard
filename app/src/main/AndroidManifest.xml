@@ -53,6 +53,9 @@
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <!-- 3.2.0版本增加-->
     <uses-permission android:name="android.permission.BLUETOOTH" />
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.BROADCAST_STICKY"/>
     <application
         android:name=".lexinsmart.MyApplication"
         android:allowBackup="true"
@@ -68,7 +71,8 @@
         <!-- 定位需要的服务 -->
         <service android:name="com.amap.api.location.APSService" >
         </service>
-        <activity android:name=".lexinsmart.MainActivity">
+        <activity android:name=".lexinsmart.MainActivity"
+            android:parentActivityName=".lexinsmart.activity.SplashActivity">
 
         </activity>
         <activity android:name=".lexinsmart.activity.FenceActivity">
@@ -83,6 +87,13 @@
         </activity>
         <service android:name="com.dk.bleNfc.BleNfcDeviceService" />
 
+        <receiver android:name=".lexinsmart.utils.BootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

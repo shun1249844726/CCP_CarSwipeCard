@@ -2,8 +2,10 @@ package com.lexinsmart.xushun.ccpcarswipecard.lexinsmart;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.app.smdt.SmdtManager;
 import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
 import android.content.Context;
@@ -19,10 +21,12 @@ import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.ActionBar;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.Toolbar;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -64,6 +68,7 @@ import com.google.gson.JsonParser;
 import com.ibm.micro.client.mqttv3.MqttException;
 import com.lexinsmart.xushun.ccpcarswipecard.R;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.CheckPermissionsActivity;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.SplashActivity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.AckRequireOk;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.EverySwipLogEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.GetInfo;
@@ -78,6 +83,7 @@ import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.CardUtils;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.DateUtils;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.JsonUtils;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.UiUtils;
 import com.orhanobut.logger.Logger;
 
 import java.sql.Timestamp;
@@ -171,6 +177,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     boolean goOnOrGooff = false; // 下班 false  上班；true
     String topic = null;
 
+    private SmdtManager mSmdtManager;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -185,6 +192,17 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         setSupportActionBar(toolbar);
 //        toolbar.setVisibility(View.GONE);
 
+        ActionBar actionBar=getSupportActionBar();
+        actionBar.setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setHomeButtonEnabled(true);
+
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                android.os.Process.killProcess(android.os.Process.myPid());
+            }
+        });
+
         msgBuffer = new StringBuffer();
         //ble_nfc服务初始化
         Intent gattServiceIntent = new Intent(this, BleNfcDeviceService.class);
@@ -198,7 +216,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         //查询已经有的实时人数
         RealmHelper realmHelper = new RealmHelper(mContext);
         int number = realmHelper.getIncarCount();
-        mTvNowCount.setText(number + "人");
+        mTvNowCount.setText(number + " 人");
         Logger.d("实时人数：" + number);
         realmHelper.close();
 
@@ -207,7 +225,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         TelephonyManager telephonemanage = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
 
         topic = Constant.IMEI;
-        topicList.add("ccp/remote_card/test/" + topic);
+        topicList.add("ccp/remote_card/" + topic);
         Logger.d("topic:" + topic);
 
 
@@ -357,7 +375,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
             } else if (mMapView.getVisibility() == View.VISIBLE) {
                 mMapView.setVisibility(View.GONE);
-                mCardview2.setVisibility(View.VISIBLE);
+                mCardview1.setVisibility(View.VISIBLE);
                 mCardview2.setVisibility(View.VISIBLE);
                 mBtnSubmit.setVisibility(View.VISIBLE);
 
@@ -1229,11 +1247,11 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         if (MqttV3Service.client == null) {
             new Thread(new MqttProcThread()).start();//如果没有 则连接
         } else if (!MqttV3Service.isConnected()) {
-//            try {
-//                MqttV3Service.client.connect();
-//            } catch (MqttException e) {
-//                e.printStackTrace();
-//            }
+            try {
+                MqttV3Service.client.connect();
+            } catch (MqttException e) {
+                e.printStackTrace();
+            }
         }
 
     }
@@ -1246,6 +1264,14 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        mSmdtManager = new SmdtManager(getApplicationContext());
+        mSmdtManager.smdtSetStatusBar(getApplicationContext(),false);
+        UiUtils.hideNavigate(this);
+    }
+
+    @Override
     protected void onPause() {
         super.onPause();
         mMapView.onPause();
@@ -1254,6 +1280,9 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     @Override
     protected void onStop() {
         super.onStop();
+
+        mSmdtManager.smdtSetStatusBar(getApplicationContext(),true);
+        System.out.println("onstop");
     }
 
     @Override
@@ -1268,8 +1297,30 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         mMapView.onDestroy();
         MqttV3Service.closeMqtt();
+      //  MqttV3Service.client = null;
+
+        System.out.println("ondestroy");
     }
 
+    /**
+     * 监听Back键按下事件,方法2:
+     * 注意:
+     * 返回值表示:是否能完全处理该事件
+     * 在此处返回false,所以会继续传播该事件.
+     * 在具体项目中此处的返回值视情况而定.
+     */
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if ((keyCode == KeyEvent.KEYCODE_BACK)) {
+            System.out.println("按下了back键   onKeyDown()");
+            //关闭当前界面方法二
+            android.os.Process.killProcess(android.os.Process.myPid());
+            return false;
+        }else {
+            return super.onKeyDown(keyCode, event);
+        }
+
+    }
     @Override
     public void onLocationChanged(AMapLocation amapLocation) {
         if (mListener != null && amapLocation != null) {
@@ -1318,7 +1369,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
     public class MqttProcThread implements Runnable {
 
-        String clientid = "CCP"+Constant.IMEI;
+        String clientid = "CCP" + Constant.IMEI;
 
         @Override
         public void run() {
@@ -1395,7 +1446,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                                     int number = realmHelper.getIncarCount();
                                     mMainTvName.setText(name); //  姓名
                                     mMainTvStaffNum.setText(staffnumber); // 工号
-                                    mTvNowCount.setText(number + "人");
+                                    mTvNowCount.setText(number + " 人");
                                     Logger.d("实时人数：" + number);
                                     realmHelper.close();
 
@@ -1425,4 +1476,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             }
         }
     };
+
+
 }
