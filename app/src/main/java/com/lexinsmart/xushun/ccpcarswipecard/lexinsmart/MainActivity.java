@@ -64,6 +64,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.ibm.micro.client.mqttv3.MqttException;
+import com.ibm.micro.client.mqttv3.MqttSecurityException;
 import com.lexinsmart.xushun.ccpcarswipecard.R;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.CheckPermissionsActivity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.AckRequireOk;
@@ -86,6 +87,9 @@ import com.orhanobut.logger.Logger;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -231,15 +235,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         // MQTT
 
-        if (MqttV3Service.client == null) {
-            new Thread(new MqttProcThread()).start();//如果没有 则连接
-        } else if (!MqttV3Service.isConnected()) {
-            try {
-                MqttV3Service.client.connect();
-            } catch (MqttException e) {
-                e.printStackTrace();
-            }
-        }
+
 
         TelephonyManager telephonemanage = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
 
@@ -247,6 +243,19 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         topicList.add("ccp/remote_card/" + topic);
         Logger.d("topic:" + topic);
 
+        if (MqttV3Service.client == null) {
+            new Thread(new MqttProcThread()).start();//如果没有 则连接
+
+            System.out.println("MQTT:创建MQTT连接");
+        } else if (!MqttV3Service.isConnected()) {
+            try {
+                MqttV3Service.client.connect();
+                System.out.println("MQTT:MQTT连接");
+
+            } catch (MqttException e) {
+                e.printStackTrace();
+            }
+        }
 
         mLlBluetoothStatus.setOnClickListener(llBluetoothClickListener);
         mLlNetStatus.setOnClickListener(llnetClickListener);
@@ -1409,7 +1418,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
 
     @SuppressWarnings("HandlerLeak")
-    private Handler myHandler = new Handler() {
+    public Handler myHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
@@ -1491,13 +1500,39 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
             } else if (msg.what == 3) {
                 if (!MqttV3Service.client.isConnected()) {
+                    System.out.println("MQTT:连接丢失");
                     Toast.makeText(mContext, "断开连接", Toast.LENGTH_SHORT).show();
                     mImgNetStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_net_disconn));
-                    mTvNetStatus.setText("网络断开\n点击重连");
+                    mTvNetStatus.setText("网络断开\n重启手机重连");
+
+                    MqttV3Service.startReconnect();
+                    startReconnect();
                 }
             }
         }
     };
+    private ScheduledExecutorService mScheduledExecutorService ;
 
+    //重新链接
+    public void startReconnect() {
+        System.out.println("MQTT:reconnection!");
+        mScheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+        mScheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+            public void run() {
+                System.out.println("MQTT:监听MQTT重新连接成功没");
+                if (MqttV3Service.client.isConnected()){
+                    System.out.println("MQTT:重连成功，通知更新界面");
+                     Message msg = new Message();
+                    msg.what = 1;
+                    msg.obj = "strresult";
+                    myHandler.sendMessage(msg);
+
+                    mScheduledExecutorService.shutdown();
+
+
+                }
+            }
+        }, 0 * 1000, 10 * 1000, TimeUnit.MILLISECONDS);
+    }
 
 }

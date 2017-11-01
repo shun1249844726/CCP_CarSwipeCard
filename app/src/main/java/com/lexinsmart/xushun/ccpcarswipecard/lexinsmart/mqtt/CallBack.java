@@ -20,6 +20,7 @@ public class CallBack implements MqttCallback {
 
 	public void messageArrived(MqttTopic topic, MqttMessage message) {
 		try {
+			System.out.println("MQTT:message:"+message.toString());
 			Message msg = Message.obtain();
 			Bundle bundle = new Bundle();
 			bundle.putString("content", message.toString());
@@ -47,4 +48,5 @@ public class CallBack implements MqttCallback {
 	public void deliveryComplete(MqttDeliveryToken token) {
 
 	}
+
 }

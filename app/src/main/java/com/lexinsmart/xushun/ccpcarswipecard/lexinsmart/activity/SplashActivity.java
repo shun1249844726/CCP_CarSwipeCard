@@ -94,6 +94,7 @@ public class SplashActivity extends AppCompatActivity {
                             UpdateChecker.checkForDialog(SplashActivity.this);
 
                         } else {
+                            mAvi.hide();
                             Intent intent = new Intent(SplashActivity.this, MainActivity.class);
                             startActivity(intent);
                         }
@@ -108,7 +109,6 @@ public class SplashActivity extends AppCompatActivity {
             }
         }, 2000);
 
-        mAvi.hide();
         mTvLodingConfig.setText("加载完成！点击下面按钮进入主页");
 
     }
