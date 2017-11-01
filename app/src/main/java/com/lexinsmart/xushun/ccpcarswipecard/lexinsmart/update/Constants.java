@@ -16,5 +16,5 @@ class Constants {
 
     static final String TAG = "UpdateChecker";
 
-    static final String UPDATE_URL = "http://tickideupadte.oss-cn-shanghai.aliyuncs.com/ccp/update.json";
+    static final String UPDATE_URL = "http://tickideupadte.oss-cn-shanghai.aliyuncs.com/ccp/testupdate.json";
 }

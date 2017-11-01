@@ -11,6 +11,8 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
+import android.media.AudioManager;
+import android.media.SoundPool;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -86,6 +88,7 @@ import com.orhanobut.logger.Logger;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -190,6 +193,15 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
     private SmdtManager mSmdtManager;
 
+
+    public static final int KEY_SOUND_A1 = 1;
+    public static final int KEY_SOUND_A2 = 2;
+
+
+    SoundPool mSoundPool;
+    private HashMap<Integer, Integer> soundPoolMap;
+
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -236,7 +248,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         // MQTT
 
 
-
         TelephonyManager telephonemanage = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
 
         topic = Constant.IMEI;
@@ -259,6 +270,21 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         mLlBluetoothStatus.setOnClickListener(llBluetoothClickListener);
         mLlNetStatus.setOnClickListener(llnetClickListener);
+
+
+        //语音提示
+        mSoundPool = new SoundPool(1, AudioManager.STREAM_ALARM, 0);
+        mSoundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
+            @Override
+            public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
+                System.out.println(" " + sampleId);
+            }
+        });
+        soundPoolMap = new HashMap<Integer, Integer>();
+        soundPoolMap.put(KEY_SOUND_A1, mSoundPool.load(this, R.raw.checkstatus, 1));
+        soundPoolMap.put(KEY_SOUND_A2, mSoundPool.load(this, R.raw.ackok, 1));
+
+//        mSoundPool.play(soundPoolMap.get(KEY_SOUND_A1), 1, 1, 0, 0, 1);
     }
 
     View.OnClickListener llnetClickListener = new View.OnClickListener() {
@@ -372,6 +398,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         mMainTvName.setText("— —");
         mTvNowCount.setText("0 人");
         mTvInfo.setText("提示信息");
+
 
 
     }
@@ -1511,7 +1538,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             }
         }
     };
-    private ScheduledExecutorService mScheduledExecutorService ;
+    private ScheduledExecutorService mScheduledExecutorService;
 
     //重新链接
     public void startReconnect() {
@@ -1520,9 +1547,9 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         mScheduledExecutorService.scheduleAtFixedRate(new Runnable() {
             public void run() {
                 System.out.println("MQTT:监听MQTT重新连接成功没");
-                if (MqttV3Service.client.isConnected()){
+                if (MqttV3Service.client.isConnected()) {
                     System.out.println("MQTT:重连成功，通知更新界面");
-                     Message msg = new Message();
+                    Message msg = new Message();
                     msg.what = 1;
                     msg.obj = "strresult";
                     myHandler.sendMessage(msg);

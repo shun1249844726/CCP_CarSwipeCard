@@ -6,6 +6,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.media.AudioManager;
+import android.media.SoundPool;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
@@ -27,6 +29,8 @@ import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.UiUtils;
 import com.wang.avi.AVLoadingIndicatorView;
 
+import java.util.HashMap;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
@@ -47,9 +51,8 @@ public class SplashActivity extends AppCompatActivity {
     TextView mTvAppversion;
     @BindView(R.id.tv_loding_config)
     TextView mTvLodingConfig;
+//    private SmdtManager mSmdtManager;
 
-
-    private SmdtManager mSmdtManager;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -110,27 +113,32 @@ public class SplashActivity extends AppCompatActivity {
 
         mTvLodingConfig.setText("加载完成！点击下面按钮进入主页");
 
+
+
+    //    soundPoolMap.put(KEY_SOUND_A2, mSoundPool.load(this, R.raw.a2, 1));
+
     }
 
     @OnClick(R.id.btn_getInApp)
     public void getInApp() {
         Intent intent = new Intent(SplashActivity.this, MainActivity.class);
         startActivity(intent);
+
     }
 
     @Override
     protected void onStart() {
         super.onStart();
 
-        mSmdtManager = new SmdtManager(getApplicationContext());
-        mSmdtManager.smdtSetStatusBar(getApplicationContext(), false);
-        UiUtils.hideNavigate(this);
+//        mSmdtManager = new SmdtManager(getApplicationContext());
+//        mSmdtManager.smdtSetStatusBar(getApplicationContext(), false);
+//        UiUtils.hideNavigate(this);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        mSmdtManager.smdtSetStatusBar(getApplicationContext(), true);
+//        mSmdtManager.smdtSetStatusBar(getApplicationContext(), true);
     }
 
     @Override

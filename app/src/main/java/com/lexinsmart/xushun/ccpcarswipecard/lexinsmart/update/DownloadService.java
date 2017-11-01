@@ -85,6 +85,7 @@ public class DownloadService extends IntentService {
                 oldProgress = progress;
             }
             // 下载完成
+            System.out.println("下载完成");
 
             installAPk(apkFile);
 
