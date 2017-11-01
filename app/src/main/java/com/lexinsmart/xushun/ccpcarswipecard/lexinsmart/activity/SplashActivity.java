@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.smdt.SmdtManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -24,7 +25,6 @@ import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.update.OnGetVersionListe
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.update.UpdateChecker;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.UiUtils;
-import com.orhanobut.logger.Logger;
 import com.wang.avi.AVLoadingIndicatorView;
 
 import butterknife.BindView;
@@ -45,6 +45,8 @@ public class SplashActivity extends AppCompatActivity {
     Button mBtnGetInApp;
     @BindView(R.id.tv_appversion)
     TextView mTvAppversion;
+    @BindView(R.id.tv_loding_config)
+    TextView mTvLodingConfig;
 
 
     private SmdtManager mSmdtManager;
@@ -53,11 +55,12 @@ public class SplashActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);// 横屏
         ButterKnife.bind(this);
         mContext = this;
 
-        mAvi.show();
-        mTvAppversion.setText(AppUtils.getVersionName(mContext));
+        mAvi.smoothToShow();
+        mTvAppversion.setText("软件版本：" + AppUtils.getVersionName(mContext));
 
         TelephonyManager telephonemanage = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
 
@@ -91,8 +94,8 @@ public class SplashActivity extends AppCompatActivity {
                             UpdateChecker.checkForDialog(SplashActivity.this);
 
                         } else {
-//                            Intent intent = new Intent(SplashActivity.this, MainActivity.class);
-//                            startActivity(intent);
+                            Intent intent = new Intent(SplashActivity.this, MainActivity.class);
+                            startActivity(intent);
                         }
                     }
 
@@ -105,9 +108,13 @@ public class SplashActivity extends AppCompatActivity {
             }
         }, 2000);
 
+        mAvi.hide();
+        mTvLodingConfig.setText("加载完成！点击下面按钮进入主页");
+
     }
+
     @OnClick(R.id.btn_getInApp)
-    public void getInApp(){
+    public void getInApp() {
         Intent intent = new Intent(SplashActivity.this, MainActivity.class);
         startActivity(intent);
     }
@@ -117,13 +124,19 @@ public class SplashActivity extends AppCompatActivity {
         super.onStart();
 
         mSmdtManager = new SmdtManager(getApplicationContext());
-        mSmdtManager.smdtSetStatusBar(getApplicationContext(),false);
+        mSmdtManager.smdtSetStatusBar(getApplicationContext(), false);
         UiUtils.hideNavigate(this);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        mSmdtManager.smdtSetStatusBar(getApplicationContext(),true);
+        mSmdtManager.smdtSetStatusBar(getApplicationContext(), true);
+    }
+
+    @Override
+    protected void onResume() {
+
+        super.onResume();
     }
 }

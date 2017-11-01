@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">CCPCarSwipeCard</string>
+    <string name="app_name">CCP车载刷卡</string>
     <string name="dknfc_vxx">dknfc v2.1.0</string>
     <string name="searchBle">搜索设备</string>
     <string name="readNfc">加密验证</string>

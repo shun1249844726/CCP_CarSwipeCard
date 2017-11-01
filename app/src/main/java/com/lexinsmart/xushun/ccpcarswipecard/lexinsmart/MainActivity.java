@@ -1,8 +1,6 @@
 package com.lexinsmart.xushun.ccpcarswipecard.lexinsmart;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.app.smdt.SmdtManager;
@@ -11,16 +9,16 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.pm.PackageManager;
+import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.os.Process;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
-import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.Toolbar;
@@ -68,7 +66,6 @@ import com.google.gson.JsonParser;
 import com.ibm.micro.client.mqttv3.MqttException;
 import com.lexinsmart.xushun.ccpcarswipecard.R;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.CheckPermissionsActivity;
-import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.SplashActivity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.AckRequireOk;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.EverySwipLogEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.GetInfo;
@@ -138,6 +135,16 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     LinearLayout mLlNetStatus;
     @BindView(R.id.ll_device_status)
     LinearLayout mLlDeviceStatus;
+    @BindView(R.id.img_gps_status)
+    ImageView mImgGpsStatus;
+    @BindView(R.id.tv_gps_status)
+    TextView mTvGpsStatus;
+    @BindView(R.id.ll_gps_status)
+    LinearLayout mLlGpsStatus;
+    @BindView(R.id.ll_main_setting)
+    LinearLayout mLlMainSetting;
+    @BindView(R.id.ll_info)
+    LinearLayout mLlInfo;
     private BleNfcDevice bleNfcDevice;
     private Scanner mScanner;
     private ProgressDialog readWriteDialog = null;
@@ -178,6 +185,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     String topic = null;
 
     private SmdtManager mSmdtManager;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -192,14 +200,14 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         setSupportActionBar(toolbar);
 //        toolbar.setVisibility(View.GONE);
 
-        ActionBar actionBar=getSupportActionBar();
+        ActionBar actionBar = getSupportActionBar();
         actionBar.setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
 
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                android.os.Process.killProcess(android.os.Process.myPid());
+                Process.killProcess(Process.myPid());
             }
         });
 
@@ -222,6 +230,17 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
 
         // MQTT
+
+        if (MqttV3Service.client == null) {
+            new Thread(new MqttProcThread()).start();//如果没有 则连接
+        } else if (!MqttV3Service.isConnected()) {
+            try {
+                MqttV3Service.client.connect();
+            } catch (MqttException e) {
+                e.printStackTrace();
+            }
+        }
+
         TelephonyManager telephonemanage = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
 
         topic = Constant.IMEI;
@@ -344,6 +363,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         mMainTvName.setText("— —");
         mTvNowCount.setText("0 人");
         mTvInfo.setText("提示信息");
+
+
     }
 
     @Override
@@ -354,18 +375,21 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        mSmdtManager.smdtSetStatusBar(getApplicationContext(), false);
+
+
         int id = item.getItemId();
 
-        if (id == R.id.action_bluetooth) {
-            if ((bleNfcDevice.isConnection() == BleManager.STATE_CONNECTED)) {
-                bleNfcDevice.requestDisConnectDevice();
-            } else {
-                searchNearestBleDevice();
-            }
-        }
-        if (id == R.id.action_settings) {
-
-        }
+//        if (id == R.id.action_bluetooth) {
+//            if ((bleNfcDevice.isConnection() == BleManager.STATE_CONNECTED)) {
+//                bleNfcDevice.requestDisConnectDevice();
+//            } else {
+//                searchNearestBleDevice();
+//            }
+//        }
+//        if (id == R.id.action_settings) {
+//
+//        }
         if (id == R.id.action_map_showHide) {
             if (mMapView.getVisibility() == View.GONE) {
                 mMapView.setVisibility(View.VISIBLE);
@@ -710,12 +734,12 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 //                    }
                         break;
                     case 8:
-                        toolbar.getMenu().getItem(0).setIcon(R.mipmap.ic_bluetooth_no);
+//                        toolbar.getMenu().getItem(0).setIcon(R.mipmap.ic_bluetooth_no);
                         mImgBluetoothStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_bluetooth_no));
                         mTvBluetooth.setText("设备未连接\n点击重连");
                         break;
                     case 9:
-                        toolbar.getMenu().getItem(0).setIcon(R.mipmap.ic_bluetooth);
+//                        toolbar.getMenu().getItem(0).setIcon(R.mipmap.ic_bluetooth);
                         mImgBluetoothStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_bluetooth));
                         mTvBluetooth.setText("设备连接成功");
                         break;
@@ -779,7 +803,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         if (!mRealmHelper.isLogExist(cardNumberString)) { //没有记录
             if (inFactory) {
-                info += "下班 厂内上车 ——send";
+                info += "下班 厂内上车 —— send out";
                 goOnOrGooff = Constant.GOOFF;
                 sendRefreshTime(-1, cardNumberString, new Timestamp(System.currentTimeMillis()).toString());
             } else {
@@ -826,17 +850,18 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 // go on or go of  下班 false  上班；true
                 if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 1 && goOnOrGooff) { //下车了 上班 ，场内
                     Logger.d("send:" + log);//TODO 在这里发送数据。
-                    info += "上班-厂内-下车->send";
+                    info += "上班-厂内-下车->send in";
                     logNew.setGetOnFlag(false);
                     logNew.setGetOffTime(new Timestamp(System.currentTimeMillis()).toString());
 
                     sendRefreshTime(1, cardNumberString, logNew.getGetOffTime());
 
                 } else if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 1 && !goOnOrGooff) {
-                    info += "下班 厂内 又下车了 ";
+                    info += "下班 厂内 又下车了 send in";
                     logNew.setGetOnFlag(false);
                     logNew.setGetOffTime(new Timestamp(System.currentTimeMillis()).toString());
 
+                    sendRefreshTime(1, cardNumberString, logNew.getGetOffTime());
 
                 } else if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 0 && goOnOrGooff) { //下班 又上车了
                     info += "上班 场内 刷了多次 上车";
@@ -846,9 +871,9 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
                 } else if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 0 && !goOnOrGooff) {
                     Logger.d("send:" + log);//TODO 在这里发送数据。
-                    info += "下班 厂内 又上车 ->send";
+                    info += "下班 厂内 又上车 ->send out";
                     logNew.setGetOnFlag(true);
-                    logNew.setGetOffTime(new Timestamp(System.currentTimeMillis()).toString());
+                    logNew.setGetOnTime(new Timestamp(System.currentTimeMillis()).toString());
                     sendRefreshTime(-1, cardNumberString, logNew.getGetOnTime());
 
                 }
@@ -1242,18 +1267,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             mBleNfcDeviceService.setScannerCallback(scannerCallback);
             mBleNfcDeviceService.setDeviceManagerCallback(deviceManagerCallback);
         }
-
         mMapView.onResume();
-        if (MqttV3Service.client == null) {
-            new Thread(new MqttProcThread()).start();//如果没有 则连接
-        } else if (!MqttV3Service.isConnected()) {
-            try {
-                MqttV3Service.client.connect();
-            } catch (MqttException e) {
-                e.printStackTrace();
-            }
-        }
-
     }
 
     @Override
@@ -1267,7 +1281,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     protected void onStart() {
         super.onStart();
         mSmdtManager = new SmdtManager(getApplicationContext());
-        mSmdtManager.smdtSetStatusBar(getApplicationContext(),false);
+        mSmdtManager.smdtSetStatusBar(getApplicationContext(), false);
         UiUtils.hideNavigate(this);
     }
 
@@ -1281,7 +1295,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     protected void onStop() {
         super.onStop();
 
-        mSmdtManager.smdtSetStatusBar(getApplicationContext(),true);
+        mSmdtManager.smdtSetStatusBar(getApplicationContext(), true);
         System.out.println("onstop");
     }
 
@@ -1297,7 +1311,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         mMapView.onDestroy();
         MqttV3Service.closeMqtt();
-      //  MqttV3Service.client = null;
+        //  MqttV3Service.client = null;
 
         System.out.println("ondestroy");
     }
@@ -1314,13 +1328,14 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         if ((keyCode == KeyEvent.KEYCODE_BACK)) {
             System.out.println("按下了back键   onKeyDown()");
             //关闭当前界面方法二
-            android.os.Process.killProcess(android.os.Process.myPid());
+            Process.killProcess(Process.myPid());
             return false;
-        }else {
+        } else {
             return super.onKeyDown(keyCode, event);
         }
 
     }
+
     @Override
     public void onLocationChanged(AMapLocation amapLocation) {
         if (mListener != null && amapLocation != null) {
@@ -1329,10 +1344,17 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
                 //经纬度：   [词典]	longitude and latitude
                 myLatLng = new LatLng(amapLocation.getLatitude(), amapLocation.getLongitude());
+
+                mImgGpsStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_gps_location));
+                mTvGpsStatus.setText("定位成功！");
             } else {
                 String errText = "定位失败," + amapLocation.getErrorCode() + ": "
                         + amapLocation.getErrorInfo();
                 Log.e("AmapErr", errText);
+
+                mImgGpsStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_gps_location_no));
+                mTvGpsStatus.setText("定位失败！");
+
             }
         }
     }
