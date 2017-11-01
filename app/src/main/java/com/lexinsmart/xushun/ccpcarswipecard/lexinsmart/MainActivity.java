@@ -72,12 +72,14 @@ import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.CheckPermission
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.AckRequireOk;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.EverySwipLogEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.GetInfo;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.InfoModel;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.RefreshTimeEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.RequireInfoEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.SwipCardLog;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.UserInfo;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db.EverySwipLogHelper;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db.RealmHelper;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db.StaffInfoHelper;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.mqtt.MqttV3Service;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.CardUtils;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant;
@@ -856,8 +858,39 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             String s = gson.toJson(requireInfoEntity);
             Logger.json(s);
 
+            StaffInfoHelper staffInfoHelper = new StaffInfoHelper(mContext);
+            InfoModel staffInfo = staffInfoHelper.getInfoByCardno(cardNumberString);
+            if ( staffInfo== null){
+                MqttV3Service.publishMsg(s, Qos, 0);
+            }else {//先从本地缓存查询
+                System.out.println("本地读取数据");
+                SwipCardLog swipCardLog = new SwipCardLog();
+                swipCardLog.setName(staffInfo.getName());
+                swipCardLog.setCardnum(cardNumberString);
+                swipCardLog.setStaffnum(staffInfo.getStaffnumber());
+                swipCardLog.setGetOnTime(new Timestamp(System.currentTimeMillis()).toString());
+                swipCardLog.setGetOnFlag(true);
+                swipCardLog.setSwipCount(1);
+                swipCardLog.setGetUpOrOff(goOnOrGooff);
 
-            MqttV3Service.publishMsg(s, Qos, 0);
+                RealmHelper realmHelper = new RealmHelper(mContext);
+                realmHelper.addSwipLog(swipCardLog);
+                realmHelper.close();
+
+                //通知更新刷卡人信息。
+                Message message = Message.obtain(handler);
+                message.what = 10;
+                //通知界面更新刷卡人信息
+                Bundle b = new Bundle();
+                b.putString("name", staffInfo.getName());
+                b.putString("staffnum", staffInfo.getStaffnumber());
+                message.setData(b);
+                handler.sendMessage(message);
+
+
+                handler.sendEmptyMessage(11);
+
+            }
 
 
             //     getUserInfo(mRealmHelper, cardNumberString, handler, 1, goOnOrGooff); //第一次 刷卡

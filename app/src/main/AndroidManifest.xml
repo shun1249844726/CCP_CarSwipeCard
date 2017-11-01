@@ -57,8 +57,8 @@
     <uses-permission android:name="android.permission.BROADCAST_STICKY"/>
 
 
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
 
     <application
         android:name=".lexinsmart.MyApplication"
@@ -96,6 +96,10 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity android:name=".lexinsmart.activity.ImportDataActivity">
+
+        </activity>
+
 
         <service android:name="com.dk.bleNfc.BleNfcDeviceService"/>
 
@@ -109,7 +113,7 @@
 
         <service
             android:name=".lexinsmart.update.DownloadService"
-            android:exported="true" />
+            android:exported="true"/>
     </application>
 
 </manifest>
