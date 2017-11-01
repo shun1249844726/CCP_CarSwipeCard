@@ -198,6 +198,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
     public static final int KEY_SOUND_A1 = 1;
     public static final int KEY_SOUND_A2 = 2;
+    public static final int KEY_SOUND_A3 = 3;
+
 
 
     SoundPool mSoundPool;
@@ -285,8 +287,9 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         soundPoolMap = new HashMap<Integer, Integer>();
         soundPoolMap.put(KEY_SOUND_A1, mSoundPool.load(this, R.raw.checkstatus, 1));
         soundPoolMap.put(KEY_SOUND_A2, mSoundPool.load(this, R.raw.ackok, 1));
+        soundPoolMap.put(KEY_SOUND_A3, mSoundPool.load(this, R.raw.ackfail, 1));
 
-//        mSoundPool.play(soundPoolMap.get(KEY_SOUND_A1), 1, 1, 0, 0, 1);
+
     }
 
     View.OnClickListener llnetClickListener = new View.OnClickListener() {
@@ -400,7 +403,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         mMainTvName.setText("— —");
         mTvNowCount.setText("0 人");
         mTvInfo.setText("提示信息");
-
 
 
     }
@@ -860,9 +862,9 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
             StaffInfoHelper staffInfoHelper = new StaffInfoHelper(mContext);
             InfoModel staffInfo = staffInfoHelper.getInfoByCardno(cardNumberString);
-            if ( staffInfo== null){
+            if (staffInfo == null) {
                 MqttV3Service.publishMsg(s, Qos, 0);
-            }else {//先从本地缓存查询
+            } else {//先从本地缓存查询
                 System.out.println("本地读取数据");
                 SwipCardLog swipCardLog = new SwipCardLog();
                 swipCardLog.setName(staffInfo.getName());
@@ -889,6 +891,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
 
                 handler.sendEmptyMessage(11);
+
+                mSoundPool.play(soundPoolMap.get(KEY_SOUND_A2), 1, 1, 0, 0, 1);
 
             }
 
@@ -986,6 +990,9 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             b.putString("staffnum", log.getStaffnum());
             message.setData(b);
             handler.sendMessage(message);
+
+            mSoundPool.play(soundPoolMap.get(KEY_SOUND_A2), 1, 1, 0, 0, 1);
+
         }
         mRealmHelper.close();
 
@@ -1541,9 +1548,12 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                                     Logger.d("实时人数：" + number);
                                     realmHelper.close();
 
+                                    mSoundPool.play(soundPoolMap.get(KEY_SOUND_A2), 1, 1, 0, 0, 1);
+
                                 }
 
                             } else { //失败 失败解析
+                                mSoundPool.play(soundPoolMap.get(KEY_SOUND_A3), 1, 1, 0, 0, 1);
 
                             }
                         } else if (cmd_type.equals("ack_refresh")) {
