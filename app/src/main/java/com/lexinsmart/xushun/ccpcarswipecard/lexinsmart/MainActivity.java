@@ -199,6 +199,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     public static final int KEY_SOUND_A1 = 1;
     public static final int KEY_SOUND_A2 = 2;
     public static final int KEY_SOUND_A3 = 3;
+    public static final int KEY_SOUND_A4 = 4;
 
 
 
@@ -288,6 +289,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         soundPoolMap.put(KEY_SOUND_A1, mSoundPool.load(this, R.raw.checkstatus, 1));
         soundPoolMap.put(KEY_SOUND_A2, mSoundPool.load(this, R.raw.ackok, 1));
         soundPoolMap.put(KEY_SOUND_A3, mSoundPool.load(this, R.raw.ackfail, 1));
+        soundPoolMap.put(KEY_SOUND_A4, mSoundPool.load(this, R.raw.donotswip, 1));
 
 
     }
@@ -655,13 +657,26 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             everySwipLogEntity.setLongitude(myLatLng.longitude + "");
 
             EverySwipLogHelper mEverySwipLogHelper = new EverySwipLogHelper(mContext);
-            mEverySwipLogHelper.addSwipLog(everySwipLogEntity);
+
+            String lasttime = mEverySwipLogHelper.getLastLogByCardNo(cardNumberString); //先查出来 最新的历史记录时间
+            System.out.println("lasttime:"+lasttime);
+
+            mEverySwipLogHelper.addSwipLog(everySwipLogEntity); //再添加一条历史记录
             mEverySwipLogHelper.close();
-            //requestInfo(cardNumberString, handler);
-            //处理逻辑
+
+            if (lasttime != null ){
+                Logger.d("最近一次刷卡时间为："+lasttime);
+                Timestamp lastTimeDate = DateUtils.StringToTimestamp(lasttime);
+                Logger.d("这次刷卡时间为："+DateUtils.timestamptostring(new Timestamp(System.currentTimeMillis())));
+
+                if ((System.currentTimeMillis()-lastTimeDate.getTime()) < (1000 * 5) ){
+//                    System.out.println("请勿连续刷卡"+(System.currentTimeMillis()-lastTimeDate.getTime()));
+                    mSoundPool.play(soundPoolMap.get(KEY_SOUND_A4), 1, 1, 0, 0, 1);
+
+                    return;
+                }
+            }
             ProcessSwipLog(cardNumberString, handler);
-
-
         }
 
         @SuppressLint("HandlerLeak")
@@ -841,11 +856,11 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         RealmHelper mRealmHelper = new RealmHelper(mContext);
         boolean inFactory = mPolygon.contains(myLatLng);   //是否在围栏位置内。
 
-        if (!mRealmHelper.isLogExist(cardNumberString)) { //没有记录
+        if (!mRealmHelper.isLogExist(cardNumberString)) { //没有记录 第一次刷卡
             if (inFactory) {
                 info += "下班 厂内上车 —— send out";
                 goOnOrGooff = Constant.GOOFF;
-                sendRefreshTime(-1, cardNumberString, new Timestamp(System.currentTimeMillis()).toString());
+                sendRefreshTime(-1, cardNumberString, new Timestamp(System.currentTimeMillis()).toString());//发送 出门信息
             } else {
                 info += "上班 厂外上车";
                 goOnOrGooff = Constant.GOTO;
@@ -896,8 +911,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
             }
 
-
-            //     getUserInfo(mRealmHelper, cardNumberString, handler, 1, goOnOrGooff); //第一次 刷卡
 
         } else {//存在记录
 

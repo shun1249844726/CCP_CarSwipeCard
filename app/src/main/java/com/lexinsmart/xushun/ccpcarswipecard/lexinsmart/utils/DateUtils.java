@@ -57,4 +57,20 @@ public class DateUtils {
 	    }
 	    return count;
 	}
+
+	public static String timestamptostring(Timestamp ts){
+		String tsStr = "";
+		DateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		try {
+			//方法一
+			tsStr = sdf.format(ts);
+			System.out.println(tsStr);
+//			//方法二
+//			tsStr = ts.toString();
+//			System.out.println(tsStr);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return tsStr;
+	}
 }

@@ -4,11 +4,15 @@ import android.content.Context;
 
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.InfoModel;
 
+import java.io.File;
 import java.util.ArrayList;
 
 import io.realm.Realm;
+import io.realm.RealmConfiguration;
 import io.realm.RealmModel;
 import io.realm.RealmResults;
+
+import static junit.framework.Assert.assertTrue;
 
 /**
  * Created by xushun on 2017/11/1.
@@ -18,9 +22,23 @@ import io.realm.RealmResults;
 
 public class StaffInfoHelper {
     private Realm mRealm;
+    public static final String STAFF_DB_NAME = "staffinfo.realm";
 
     public StaffInfoHelper(Context context) {
-        mRealm = Realm.getDefaultInstance();
+
+
+        File directory = context.getExternalFilesDir(null);
+        directory.mkdirs();
+        assertTrue(directory.exists());
+
+
+        RealmConfiguration configuration=new RealmConfiguration.Builder()
+                .name(STAFF_DB_NAME)
+                .directory(directory)
+                .deleteRealmIfMigrationNeeded()
+                .build();
+
+        mRealm = Realm.getInstance(configuration);
     }
 
     public void addInfos(ArrayList<InfoModel> infosList) {

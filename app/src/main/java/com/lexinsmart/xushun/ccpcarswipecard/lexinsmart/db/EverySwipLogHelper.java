@@ -6,6 +6,8 @@ import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.EverySwipLogEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.SwipCardLog;
 
 import io.realm.Realm;
+import io.realm.RealmResults;
+import io.realm.Sort;
 
 /**
  * Created by xushun on 2017/10/29.
@@ -23,16 +25,30 @@ public class EverySwipLogHelper {
 
     /**
      * add
+     *
      * @param everySwipLogEntity
      */
-    public void addSwipLog(EverySwipLogEntity everySwipLogEntity){
+    public void addSwipLog(EverySwipLogEntity everySwipLogEntity) {
         mRealm.beginTransaction();
         mRealm.copyToRealm(everySwipLogEntity);
         mRealm.commitTransaction();
     }
 
+    public String getLastLogByCardNo(String cardno) {
+        RealmResults<EverySwipLogEntity> logs = mRealm.where(EverySwipLogEntity.class).equalTo("cardnumber",cardno).findAll();
+
+        System.out.println("result size:"+logs.size());
+        if (logs == null || logs.size() ==0) {
+            return null;
+        } else {
+            logs = logs.sort("swipcartime", Sort.DESCENDING);
+
+            return logs.get(0).getSwipcartime();
+        }
+    }
+
     public void close() {
-        if (mRealm != null){
+        if (mRealm != null) {
             mRealm.close();
         }
     }

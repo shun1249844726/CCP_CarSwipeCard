@@ -278,9 +278,11 @@
     <Button
         android:id="@+id/btn_submit"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="50dp"
         android:background="@drawable/btn_nor_down"
         android:layout_marginTop="20dp"
+        android:layout_marginLeft="30dp"
+        android:layout_marginRight="30dp"
         android:text="结束行程"
         android:textSize="25sp"
         android:textColor="@android:color/white"
