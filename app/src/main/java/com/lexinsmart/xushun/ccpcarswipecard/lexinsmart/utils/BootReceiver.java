@@ -19,20 +19,15 @@ import java.util.logging.Logger;
  */
 
 public class BootReceiver extends BroadcastReceiver {
+    public BootReceiver() {
+    }
+
     @Override
-    public void onReceive(final Context context, Intent intent) {
-
-
-        if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
-            Log.e("BootReceiver", "5秒后程序自动启动");
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    Intent bootIntent = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName()); // 要启动的Activity
-                    bootIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    context.startActivity(bootIntent);
-                }
-            }, 5000);
+    public void onReceive(Context context, Intent intent) {
+        if (intent.getAction().equals("android.intent.action.BOOT_COMPLETED")) {
+            Intent i = new Intent(context, SplashActivity.class);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(i);
         }
     }
 }

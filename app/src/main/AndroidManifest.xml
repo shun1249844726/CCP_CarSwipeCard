@@ -103,14 +103,14 @@
 
         <service android:name="com.dk.bleNfc.BleNfcDeviceService"/>
 
-        <receiver android:name=".lexinsmart.utils.BootReceiver">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED"/>
-
-                <category android:name="android.intent.category.DEFAULT"/>
+        <receiver
+            android:name=".lexinsmart.utils.BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter android:priority="1000">
+                <action android:name="android.intent.action.BOOT_COMPLETED"></action>
             </intent-filter>
         </receiver>
-
         <service
             android:name=".lexinsmart.update.DownloadService"
             android:exported="true"/>
