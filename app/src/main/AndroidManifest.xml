@@ -99,6 +99,9 @@
         <activity android:name=".lexinsmart.activity.ImportDataActivity">
 
         </activity>
+        <activity android:name=".lexinsmart.activity.OssTestActivity">
+
+        </activity>
 
 
         <service android:name="com.dk.bleNfc.BleNfcDeviceService"/>
