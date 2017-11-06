@@ -282,8 +282,9 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         mSoundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
             @Override
             public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
-                System.out.println(" " + sampleId);
+                System.out.println("sampleId" + sampleId + "  "+status);
             }
+
         });
         soundPoolMap = new HashMap<Integer, Integer>();
         soundPoolMap.put(KEY_SOUND_A1, mSoundPool.load(this, R.raw.checkstatus, 1));
@@ -1378,6 +1379,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     protected void onPause() {
         super.onPause();
         mMapView.onPause();
+        deactivate();
     }
 
     @Override
@@ -1451,21 +1453,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     @Override
     public void activate(OnLocationChangedListener listener) {
         mListener = listener;
-        if (mlocationClient == null) {
-            mlocationClient = new AMapLocationClient(this);
-            mLocationOption = new AMapLocationClientOption();
-            // 设置定位监听
-            mlocationClient.setLocationListener(this);
-            // 设置为高精度定位模式
-            mLocationOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Hight_Accuracy);
-            // 只是为了获取当前位置，所以设置为单次定位
-            mLocationOption.setOnceLocation(false);
-            mLocationOption.setGpsFirst(true);
-            // 设置定位参数
-            mlocationClient.setLocationOption(mLocationOption);
-            mlocationClient.startLocation();
-        }
-
     }
 
     @Override
