@@ -2,6 +2,7 @@ package com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db;
 
 import android.content.Context;
 
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.EverySwipLogEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.SwipCardLog;
 
 import java.text.SimpleDateFormat;
@@ -102,5 +103,13 @@ public class RealmHelper {
                 .equalTo("getOnFlag",true)
                 .findAll();
         return logs.size();
+    }
+    public RealmResults<SwipCardLog> getAllLog(){
+        RealmResults<SwipCardLog> realmResults = mRealm.where(SwipCardLog.class).findAll();
+        if (realmResults == null || realmResults.size() == 0){
+            return null;
+        }else {
+            return realmResults;
+        }
     }
 }

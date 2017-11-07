@@ -47,6 +47,15 @@ public class EverySwipLogHelper {
         }
     }
 
+    public  RealmResults<EverySwipLogEntity> getAllLog(){
+        RealmResults<EverySwipLogEntity> logs = mRealm.where(EverySwipLogEntity.class).findAll();
+        if (logs == null || logs.size() ==0) {
+            return null;
+        } else {
+            logs = logs.sort("swipcartime", Sort.DESCENDING);
+            return logs;
+        }
+    }
     public void close() {
         if (mRealm != null) {
             mRealm.close();

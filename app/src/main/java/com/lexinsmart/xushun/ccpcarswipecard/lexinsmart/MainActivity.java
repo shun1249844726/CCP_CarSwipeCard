@@ -19,6 +19,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Process;
+import android.os.StrictMode;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.ActionBar;
@@ -38,6 +39,16 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.alibaba.sdk.android.oss.ClientConfiguration;
+import com.alibaba.sdk.android.oss.ClientException;
+import com.alibaba.sdk.android.oss.OSS;
+import com.alibaba.sdk.android.oss.OSSClient;
+import com.alibaba.sdk.android.oss.ServiceException;
+import com.alibaba.sdk.android.oss.common.OSSLog;
+import com.alibaba.sdk.android.oss.common.auth.OSSCredentialProvider;
+import com.alibaba.sdk.android.oss.common.auth.OSSStsTokenCredentialProvider;
+import com.alibaba.sdk.android.oss.model.PutObjectRequest;
+import com.alibaba.sdk.android.oss.model.PutObjectResult;
 import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
@@ -69,27 +80,38 @@ import com.ibm.micro.client.mqttv3.MqttException;
 import com.ibm.micro.client.mqttv3.MqttSecurityException;
 import com.lexinsmart.xushun.ccpcarswipecard.R;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.CheckPermissionsActivity;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.OssTestActivity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.AckRequireOk;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.EverySwipLogEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.GetInfo;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.InfoModel;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.RefreshTimeEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.RequireInfoEntity;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.StsModel;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.SwipCardLog;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.UserInfo;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db.EverySwipLogHelper;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db.RealmHelper;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db.StaffInfoHelper;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.mqtt.MqttV3Service;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.oss.MultipartUploadSamples;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.oss.ProgressCallback;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.oss.PutObjectSamples;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.oss.StsTokenSamples;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.CardUtils;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.DateUtils;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.ExcelUtils;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.FileUtils;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.JsonUtils;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.StringUtils;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.UiUtils;
 import com.orhanobut.logger.Logger;
 
+import java.io.File;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.concurrent.Executors;
@@ -101,6 +123,13 @@ import java.util.concurrent.locks.ReentrantLock;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import io.realm.RealmResults;
+
+import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.FAIL;
+import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.STS_TOKEN_SUC;
+import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.UPLOAD_Fail;
+import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.UPLOAD_PROGRESS;
+import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.UPLOAD_SUC;
 
 /**
  * Created by xushun on 2017/10/25.
@@ -202,19 +231,45 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     public static final int KEY_SOUND_A4 = 4;
 
 
-
     SoundPool mSoundPool;
     private HashMap<Integer, Integer> soundPoolMap;
+
+
+    //Oss
+    private PutObjectSamples putObjectSamples;
+    private OSS oss;
+    private StsTokenSamples stsTokenSamples;
+    private static final String testBucket = "ccpswipcard";
+    private static String uploadObject = "logs/" + Constant.IMEI + "/刷卡详细记录.xls";
+
+    private static final String endpoint = "http://oss-cn-hangzhou.aliyuncs.com";
+    private static final String uploadFilePath = "/storage/emulated/0/Android/data/com.lexinsmart.xushun.ccpcarswipecard/files/Record/刷卡详细记录.xls";
 
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
+                .detectDiskReads()
+                .detectDiskWrites()
+                .detectNetwork()   // or .detectAll() for all detectable problems
+                .penaltyLog()
+                .build());
 
+        StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
+                .detectLeakedSqlLiteObjects()
+                .detectLeakedClosableObjects()
+                .penaltyLog()
+                .penaltyDeath()
+                .build());
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);   //应用运行时，保持屏幕高亮，不锁屏
 
+
+        Date mDate = new Date();
+        String dateString = DateUtils.dateToString(mDate, "MEDIUM");
+        uploadObject = "logs/" + dateString + "/" + Constant.IMEI + "/刷卡详细记录.xls";
 
         mContext = this;
         toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -278,11 +333,11 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
 
         //语音提示
-        mSoundPool = new SoundPool(1, AudioManager.STREAM_ALARM, 0);
+        mSoundPool = new SoundPool(1, AudioManager.STREAM_SYSTEM, 0);
         mSoundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
             @Override
             public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
-                System.out.println("sampleId" + sampleId + "  "+status);
+                System.out.println("sampleId" + sampleId + "  " + status);
             }
 
         });
@@ -292,6 +347,75 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         soundPoolMap.put(KEY_SOUND_A3, mSoundPool.load(this, R.raw.ackfail, 1));
         soundPoolMap.put(KEY_SOUND_A4, mSoundPool.load(this, R.raw.donotswip, 1));
 
+
+        initStsData();
+    }
+
+    private void initStsData() {
+        //get sts token
+        stsTokenSamples = new StsTokenSamples(stsHandler);
+        stsTokenSamples.getStsTokenAndSet();
+    }
+
+    private Handler stsHandler = new Handler(new Handler.Callback() {
+        @Override
+        public boolean handleMessage(Message msg) {
+            boolean handled = false;
+            switch (msg.what) {
+                case UPLOAD_SUC:
+                    Toast.makeText(MainActivity.this, "upload_suc", Toast.LENGTH_SHORT).show();
+                    handled = true;
+                    break;
+                case FAIL:
+                    Toast.makeText(MainActivity.this, "fail", Toast.LENGTH_SHORT).show();
+                    handled = true;
+                    break;
+                case STS_TOKEN_SUC:
+                    Toast.makeText(MainActivity.this, "sts_token_suc", Toast.LENGTH_SHORT).show();
+                    StsModel response = (StsModel) msg.obj;
+                    setOssClient(response.Credentials.AccessKeyId, response.Credentials.AccessKeySecret, response.Credentials.SecurityToken);
+                    System.out.println("-------StsToken.Expiration-------\n" + response.Credentials.Expiration);
+                    System.out.println("-------StsToken.AccessKeyId-------\n" + response.Credentials.AccessKeyId);
+                    System.out.println("-------StsToken.SecretKeyId-------\n" + response.Credentials.AccessKeySecret);
+                    System.out.println("-------StsToken.SecurityToken-------\n" + response.Credentials.SecurityToken);
+                    handled = true;
+                    break;
+            }
+
+
+            return handled;
+        }
+    });
+    private OSSCredentialProvider mCredentialProvider;
+    private MultipartUploadSamples multipartUploadSamples;
+
+    public void setOssClient(String ak, String sk, String token) {
+        if (mCredentialProvider == null || oss == null) {
+
+            mCredentialProvider = new OSSStsTokenCredentialProvider(ak, sk, token);
+
+            OSSCredentialProvider credentialProvider = new OSSStsTokenCredentialProvider(ak, sk, token);
+
+            ClientConfiguration conf = new ClientConfiguration();
+            conf.setConnectionTimeout(15 * 1000); // 连接超时，默认15秒
+            conf.setSocketTimeout(15 * 1000); // socket超时，默认15秒
+            conf.setMaxConcurrentRequest(5); // 最大并发请求书，默认5个
+            conf.setMaxErrorRetry(2); // 失败后最大重试次数，默认2次
+            OSSLog.enableLog(); //这个开启会支持写入手机sd卡中的一份日志文件位置在SD_path\OSSLog\logs.csv
+            oss = new OSSClient(getApplicationContext(), endpoint, credentialProvider, conf);
+
+            initSamples();
+        } else {
+            ((OSSStsTokenCredentialProvider) mCredentialProvider).setAccessKeyId(ak);
+            ((OSSStsTokenCredentialProvider) mCredentialProvider).setSecretKeyId(sk);
+            ((OSSStsTokenCredentialProvider) mCredentialProvider).setSecurityToken(token);
+        }
+    }
+
+    private void initSamples() {
+        multipartUploadSamples = new MultipartUploadSamples(oss, testBucket, uploadObject, uploadFilePath, handler);
+
+        putObjectSamples = new PutObjectSamples(oss, testBucket, uploadObject, uploadFilePath);
 
     }
 
@@ -323,6 +447,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             }
         }
     };
+
 
     private void initFence() {
 
@@ -395,8 +520,65 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
     @OnClick(R.id.btn_submit)
     void submit(View view) {
-        Logger.d("submit");
-        RealmHelper realmHelper = new RealmHelper(mContext);
+        boolean sendToOss = false;
+        String[] title = {"卡号", "刷卡时间", "纬度", "经度"};
+        String[] title2 = {"姓名", "卡号", "工号", "上车时间", "下车时间", "是否在车上", "刷卡次数", "上班/下班"};
+        File file = new File(getExternalFilesDir(null) + "/Record");
+        FileUtils.makeDir(file);
+        System.out.println(file.toString());
+        ExcelUtils.initExcel(file.toString() + "/刷卡详细记录.xls", title, title2);
+        String fileName = getExternalFilesDir(null) + "/Record/刷卡详细记录.xls";
+
+
+        System.out.println("结束行程");
+        EverySwipLogHelper everySwipLogHelper = new EverySwipLogHelper(mContext);//获取所有列表，转成EXcel 发给服务器
+        RealmResults<EverySwipLogEntity> logs = everySwipLogHelper.getAllLog();
+        ArrayList<ArrayList<String>> logsArray = new ArrayList<>();
+        if (logs != null) {
+            for (int i = 0; i < logs.size(); i++) {
+                EverySwipLogEntity everySwipLogEntity = logs.get(i);
+
+                ArrayList<String> logbeanList = new ArrayList<String>();
+                logbeanList.add(everySwipLogEntity.getCardnumber());
+                logbeanList.add(everySwipLogEntity.getSwipcartime());
+                logbeanList.add(everySwipLogEntity.getLatitude());
+                logbeanList.add(everySwipLogEntity.getLongitude());
+
+                logsArray.add(logbeanList);
+            }
+
+            ExcelUtils.writeObjListToExcel(0, logsArray, fileName, this);
+
+        }
+
+
+        RealmHelper realmHelper = new RealmHelper(mContext);//获取
+        RealmResults<SwipCardLog> incarlog = realmHelper.getAllLog();
+        ArrayList<ArrayList<String>> incarlogsArray = new ArrayList<>();
+        if (incarlog != null) {
+            for (int incarlogindex = 0; incarlogindex < incarlog.size(); incarlogindex++) {
+                SwipCardLog oneswiplog = incarlog.get(incarlogindex);
+                ArrayList<String> oneswiplogbeanlist = new ArrayList<String>();
+                oneswiplogbeanlist.add(StringUtils.checkIsNull(oneswiplog.getName()));
+                oneswiplogbeanlist.add(StringUtils.checkIsNull(oneswiplog.getCardnum()));
+                oneswiplogbeanlist.add(StringUtils.checkIsNull(oneswiplog.getStaffnum()));
+                oneswiplogbeanlist.add(StringUtils.checkIsNull(oneswiplog.getGetOnTime()));
+                oneswiplogbeanlist.add(StringUtils.checkIsNull(oneswiplog.getGetOffTime()));
+                oneswiplogbeanlist.add(StringUtils.checkIsNull(String.valueOf(oneswiplog.isGetOnFlag())));
+                oneswiplogbeanlist.add(StringUtils.checkIsNull("" + oneswiplog.getSwipCount()));
+                oneswiplogbeanlist.add(StringUtils.checkIsNull(String.valueOf(oneswiplog.isGetUpOrOff())));
+
+                incarlogsArray.add(oneswiplogbeanlist);
+            }
+//            File file = new File(getExternalFilesDir(null) + "/Record");
+//            FileUtils.makeDir(file);
+//            System.out.println(file.toString());
+//            ExcelUtils.initExcel(file.toString() + "/车载记录.xls", title);
+//            String fileName = getExternalFilesDir(null) + "/Record/车载记录.xls";
+            ExcelUtils.writeObjListToExcel(1, incarlogsArray, fileName, this);
+
+            sendToOss = true;
+        }
 
         realmHelper.clearAll();
         realmHelper.close();
@@ -406,7 +588,46 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         mTvNowCount.setText("0 人");
         mTvInfo.setText("提示信息");
 
+        if (sendToOss) {
+            if (checkNotNull(putObjectSamples)) {
+                putObjectSamples.asyncPutObjectFromLocalFile(new ProgressCallback<PutObjectRequest, PutObjectResult>() {
+                    @Override
+                    public void onProgress(PutObjectRequest request, long currentSize, long totalSize) {
 
+                        Message msg = Message.obtain();
+                        msg.what = UPLOAD_PROGRESS;
+                        Bundle data = new Bundle();
+                        data.putLong("currentSize", currentSize);
+                        data.putLong("totalSize", totalSize);
+                        msg.setData(data);
+                        stsHandler.sendMessage(msg);
+
+                    }
+
+                    @Override
+                    public void onSuccess(PutObjectRequest request, PutObjectResult result) {
+                        stsHandler.sendEmptyMessage(UPLOAD_SUC);
+
+
+                    }
+
+                    @Override
+                    public void onFailure(PutObjectRequest request, ClientException clientException, ServiceException serviceException) {
+                        stsHandler.sendEmptyMessage(UPLOAD_Fail);
+
+                    }
+                });
+            }
+        }
+
+    }
+
+    private boolean checkNotNull(Object obj) {
+        if (obj != null) {
+            return true;
+        }
+        Toast.makeText(MainActivity.this, "init Samples fail", Toast.LENGTH_SHORT).show();
+        return false;
     }
 
     @Override
@@ -659,17 +880,17 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             EverySwipLogHelper mEverySwipLogHelper = new EverySwipLogHelper(mContext);
 
             String lasttime = mEverySwipLogHelper.getLastLogByCardNo(cardNumberString); //先查出来 最新的历史记录时间
-            System.out.println("lasttime:"+lasttime);
+            System.out.println("lasttime:" + lasttime);
 
             mEverySwipLogHelper.addSwipLog(everySwipLogEntity); //再添加一条历史记录
             mEverySwipLogHelper.close();
 
-            if (lasttime != null ){
-                Logger.d("最近一次刷卡时间为："+lasttime);
+            if (lasttime != null) {
+                Logger.d("最近一次刷卡时间为：" + lasttime);
                 Timestamp lastTimeDate = DateUtils.StringToTimestamp(lasttime);
-                Logger.d("这次刷卡时间为："+DateUtils.timestamptostring(new Timestamp(System.currentTimeMillis())));
+                Logger.d("这次刷卡时间为：" + DateUtils.timestamptostring(new Timestamp(System.currentTimeMillis())));
 
-                if ((System.currentTimeMillis()-lastTimeDate.getTime()) < (1000 * 5) ){
+                if ((System.currentTimeMillis() - lastTimeDate.getTime()) < (1000 * 5)) {
 //                    System.out.println("请勿连续刷卡"+(System.currentTimeMillis()-lastTimeDate.getTime()));
                     mSoundPool.play(soundPoolMap.get(KEY_SOUND_A4), 1, 1, 0, 0, 1);
 
@@ -817,6 +1038,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 }
             }
         };
+
 
         @Override
         public void onReceiveRfmSentApduCmd(byte[] bytApduRtnData) {
