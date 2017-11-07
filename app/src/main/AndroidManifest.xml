@@ -90,17 +90,17 @@
             android:name=".lexinsmart.activity.SplashActivity"
             android:launchMode="singleTask"
             android:screenOrientation="portrait">
-
-        </activity>
-        <activity android:name=".lexinsmart.activity.ImportDataActivity">
-
-        </activity>
-        <activity android:name=".lexinsmart.activity.OssTestActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+        </activity>
+        <activity android:name=".lexinsmart.activity.ImportDataActivity">
+
+        </activity>
+        <activity android:name=".lexinsmart.activity.OssTestActivity">
+
         </activity>
 
 

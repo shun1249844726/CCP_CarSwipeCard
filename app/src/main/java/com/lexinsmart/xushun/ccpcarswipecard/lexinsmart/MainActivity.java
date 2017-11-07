@@ -329,33 +329,32 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         if (mAMap == null) {
             mAMap = mMapView.getMap();
             UiSettings settings = mAMap.getUiSettings();
-            mAMap.setLocationSource(this);
+            settings.setRotateGesturesEnabled(false);
             settings.setMyLocationButtonEnabled(true);
-            mAMap.setMyLocationEnabled(true);
 
             mAMap.moveCamera(CameraUpdateFactory.zoomBy(6));
             setUpMap();
         }
 
-        mLocationClient = new AMapLocationClient(getApplicationContext());
-        mLocationClient.setLocationListener(this);
-
-        mLocationClientOption = new AMapLocationClientOption();
-        mLocationClientOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Hight_Accuracy);
-        //设置是否返回地址信息（默认返回地址信息）
-        mLocationClientOption.setNeedAddress(true);
-        //设置是否只定位一次,默认为false
-        mLocationClientOption.setOnceLocation(false);
-        //设置是否强制刷新WIFI，默认为强制刷新
-        mLocationClientOption.setWifiActiveScan(true);
-        //设置是否允许模拟位置,默认为false，不允许模拟位置
-        mLocationClientOption.setMockEnable(false);
-        //设置定位间隔,单位毫秒,默认为2000ms
-        mLocationClientOption.setInterval(2000);
-        //给定位客户端对象设置定位参数
-        mLocationClient.setLocationOption(mLocationClientOption);
-        //启动定位
-        mLocationClient.startLocation();
+//        mLocationClient = new AMapLocationClient(getApplicationContext());
+//        mLocationClient.setLocationListener(this);
+//
+//        mLocationClientOption = new AMapLocationClientOption();
+//        mLocationClientOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Hight_Accuracy);
+//        //设置是否返回地址信息（默认返回地址信息）
+//        mLocationClientOption.setNeedAddress(true);
+//        //设置是否只定位一次,默认为false
+//        mLocationClientOption.setOnceLocation(false);
+//        //设置是否强制刷新WIFI，默认为强制刷新
+//        mLocationClientOption.setWifiActiveScan(true);
+//        //设置是否允许模拟位置,默认为false，不允许模拟位置
+//        mLocationClientOption.setMockEnable(false);
+//        //设置定位间隔,单位毫秒,默认为2000ms
+//        mLocationClientOption.setInterval(2000);
+//        //给定位客户端对象设置定位参数
+//        mLocationClient.setLocationOption(mLocationClientOption);
+//        //启动定位
+//        mLocationClient.startLocation();
     }
 
     /**
@@ -1393,6 +1392,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     @Override
     public void onDestroy() {
         super.onDestroy();
+        mMapView.onDestroy();
 
         if (readWriteDialog != null) {
             readWriteDialog.dismiss();
@@ -1400,7 +1400,10 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         unbindService(mServiceConnection);
 
-        mMapView.onDestroy();
+
+        if (null != mlocationClient) {
+            mlocationClient.onDestroy();
+        }
         MqttV3Service.closeMqtt();
         //  MqttV3Service.client = null;
 
@@ -1453,6 +1456,21 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     @Override
     public void activate(OnLocationChangedListener listener) {
         mListener = listener;
+
+        if (mlocationClient == null) {
+            mlocationClient = new AMapLocationClient(this);
+            mLocationOption = new AMapLocationClientOption();
+            // 设置定位监听
+            mlocationClient.setLocationListener(this);
+            // 设置为高精度定位模式
+            mLocationOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Hight_Accuracy);
+            // 只是为了获取当前位置，所以设置为单次定位
+            mLocationOption.setOnceLocation(false);
+            mLocationOption.setGpsFirst(true);
+            // 设置定位参数
+            mlocationClient.setLocationOption(mLocationOption);
+            mlocationClient.startLocation();
+        }
     }
 
     @Override
