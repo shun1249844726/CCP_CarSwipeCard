@@ -64,10 +64,11 @@ public class ExcelUtils {
 
 	/**
 	 * 初始化Excel
-	 * @param fileName
-	 * @param colName
-     */
-	public static void initExcel(String fileName, String[] colName,String[] cloname2) {
+	 * @param fileName  文件名
+	 * @param colName0   标题栏  sheet0
+	 * @param cloname1 标题栏  sheet1
+	 */
+	public static void initExcel(String fileName, String[] colName0,String[] cloname1) {
 		format();
 		WritableWorkbook workbook = null;
 		try {
@@ -76,20 +77,23 @@ public class ExcelUtils {
 				file.createNewFile();
 			}
 			workbook = Workbook.createWorkbook(file);
-			WritableSheet sheet = workbook.createSheet("每条刷卡记录", 1);
+
+			WritableSheet sheet2 = workbook.createSheet("每条刷卡记录", 0);
+			//创建标题栏
+			sheet2.addCell((WritableCell) new Label(0, 0, fileName,arial14format));
+			for (int col = 0; col < colName0.length; col++) {
+				sheet2.addCell(new Label(col, 0, colName0[col], arial10format));
+			}
+
+			WritableSheet sheet = workbook.createSheet("车上人员报表", 1);
 			//创建标题栏
 			sheet.addCell((WritableCell) new Label(0, 0, fileName,arial14format));
-			for (int col = 0; col < cloname2.length; col++) {
-				sheet.addCell(new Label(col, 0, cloname2[col], arial10format));
+			for (int col = 0; col < cloname1.length; col++) {
+				sheet.addCell(new Label(col, 0, cloname1[col], arial10format));
 			}
 			sheet.setRowView(0,340); //设置行高
 
-			WritableSheet sheet2 = workbook.createSheet("车上人员报表", 0);
-			//创建标题栏
-			sheet2.addCell((WritableCell) new Label(0, 0, fileName,arial14format));
-			for (int col = 0; col < colName.length; col++) {
-				sheet2.addCell(new Label(col, 0, colName[col], arial10format));
-			}
+
 
 			workbook.write();
 		} catch (Exception e) {

@@ -130,6 +130,8 @@ import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.ST
 import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.UPLOAD_Fail;
 import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.UPLOAD_PROGRESS;
 import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.UPLOAD_SUC;
+import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.title0;
+import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.title1;
 
 /**
  * Created by xushun on 2017/10/25.
@@ -249,7 +251,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
+        StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()  //OSS相关
                 .detectDiskReads()
                 .detectDiskWrites()
                 .detectNetwork()   // or .detectAll() for all detectable problems
@@ -267,7 +269,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);   //应用运行时，保持屏幕高亮，不锁屏
 
 
-        Date mDate = new Date();
+        Date mDate = new Date();   //设置上传到OSS的文件的目录结构   logs/日期/IMEI/时间
         String dateString = DateUtils.dateToString(mDate, "MEDIUM");
         uploadObject = "logs/" + dateString + "/" + Constant.IMEI + "/"+ DateUtils.getTimeShort()+".xls";
 
@@ -311,12 +313,11 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         TelephonyManager telephonemanage = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
 
         topic = Constant.IMEI;
-        topicList.add("ccp/remote_card/" + topic);
-        Logger.d("topic:" + topic);
+        topicList.add("ccp/remote_card/" + topic);  //注册刷卡的话题
+//        Logger.d("topic:" + topic);
 
         if (MqttV3Service.client == null) {
             new Thread(new MqttProcThread()).start();//如果没有 则连接
-
             System.out.println("MQTT:创建MQTT连接");
         } else if (!MqttV3Service.isConnected()) {
             try {
@@ -348,30 +349,36 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         soundPoolMap.put(KEY_SOUND_A4, mSoundPool.load(this, R.raw.donotswip, 1));
 
 
-        initStsData();
+        initStsData();  //初始化 OSS Sts   获取TOKEN 等信息。
     }
 
+    /**
+     * 初始化STS
+     */
     private void initStsData() {
         //get sts token
         stsTokenSamples = new StsTokenSamples(stsHandler);
         stsTokenSamples.getStsTokenAndSet();
     }
 
+    /**
+     * sts 的handler  处理。
+     */
     private Handler stsHandler = new Handler(new Handler.Callback() {
         @Override
         public boolean handleMessage(Message msg) {
             boolean handled = false;
             switch (msg.what) {
                 case UPLOAD_SUC:
-                    Toast.makeText(MainActivity.this, "upload_suc", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "上传文件成功！", Toast.LENGTH_SHORT).show();
                     handled = true;
                     break;
                 case FAIL:
-                    Toast.makeText(MainActivity.this, "fail", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "失败", Toast.LENGTH_SHORT).show();
                     handled = true;
                     break;
                 case STS_TOKEN_SUC:
-                    Toast.makeText(MainActivity.this, "sts_token_suc", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "获取认证成功", Toast.LENGTH_SHORT).show();
                     StsModel response = (StsModel) msg.obj;
                     setOssClient(response.Credentials.AccessKeyId, response.Credentials.AccessKeySecret, response.Credentials.SecurityToken);
                     System.out.println("-------StsToken.Expiration-------\n" + response.Credentials.Expiration);
@@ -381,8 +388,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                     handled = true;
                     break;
             }
-
-
             return handled;
         }
     });
@@ -391,11 +396,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
     public void setOssClient(String ak, String sk, String token) {
         if (mCredentialProvider == null || oss == null) {
-
             mCredentialProvider = new OSSStsTokenCredentialProvider(ak, sk, token);
-
             OSSCredentialProvider credentialProvider = new OSSStsTokenCredentialProvider(ak, sk, token);
-
             ClientConfiguration conf = new ClientConfiguration();
             conf.setConnectionTimeout(15 * 1000); // 连接超时，默认15秒
             conf.setSocketTimeout(15 * 1000); // socket超时，默认15秒
@@ -403,7 +405,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             conf.setMaxErrorRetry(2); // 失败后最大重试次数，默认2次
             OSSLog.enableLog(); //这个开启会支持写入手机sd卡中的一份日志文件位置在SD_path\OSSLog\logs.csv
             oss = new OSSClient(getApplicationContext(), endpoint, credentialProvider, conf);
-
             initSamples();
         } else {
             ((OSSStsTokenCredentialProvider) mCredentialProvider).setAccessKeyId(ak);
@@ -412,18 +413,14 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         }
     }
 
-    private void initSamples() {
-        multipartUploadSamples = new MultipartUploadSamples(oss, testBucket, uploadObject, uploadFilePath, handler);
-
+    private void initSamples() {//初始化OSS的上传的东西
+        multipartUploadSamples = new MultipartUploadSamples(oss, testBucket, uploadObject, uploadFilePath, stsHandler);
         putObjectSamples = new PutObjectSamples(oss, testBucket, uploadObject, uploadFilePath);
-
     }
 
     View.OnClickListener llnetClickListener = new View.OnClickListener() {
-
         @Override
         public void onClick(View v) {
-
             //TODO  重连MQTT
             if (!MqttV3Service.isConnected()) {
 //                try {
@@ -434,7 +431,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             }
         }
     };
-
     View.OnClickListener llBluetoothClickListener = new View.OnClickListener() {
 
         @Override
@@ -448,9 +444,10 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         }
     };
 
-
+    /**
+     * 初始化地图
+     */
     private void initFence() {
-
         if (mAMap == null) {
             mAMap = mMapView.getMap();
             UiSettings settings = mAMap.getUiSettings();
@@ -460,26 +457,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             mAMap.moveCamera(CameraUpdateFactory.zoomBy(6));
             setUpMap();
         }
-
-//        mLocationClient = new AMapLocationClient(getApplicationContext());
-//        mLocationClient.setLocationListener(this);
-//
-//        mLocationClientOption = new AMapLocationClientOption();
-//        mLocationClientOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Hight_Accuracy);
-//        //设置是否返回地址信息（默认返回地址信息）
-//        mLocationClientOption.setNeedAddress(true);
-//        //设置是否只定位一次,默认为false
-//        mLocationClientOption.setOnceLocation(false);
-//        //设置是否强制刷新WIFI，默认为强制刷新
-//        mLocationClientOption.setWifiActiveScan(true);
-//        //设置是否允许模拟位置,默认为false，不允许模拟位置
-//        mLocationClientOption.setMockEnable(false);
-//        //设置定位间隔,单位毫秒,默认为2000ms
-//        mLocationClientOption.setInterval(2000);
-//        //给定位客户端对象设置定位参数
-//        mLocationClient.setLocationOption(mLocationClientOption);
-//        //启动定位
-//        mLocationClient.startLocation();
     }
 
     /**
@@ -504,7 +481,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         // 设置定位的类型为定位模式 ，可以由定位、跟随或地图根据面向方向旋转几种
         mAMap.setMyLocationType(AMap.LOCATION_TYPE_LOCATE);
 
-        // 绘制一个长方形
+        // 绘制一个长方形  地里围栏的
         PolygonOptions pOption = new PolygonOptions();
         pOption.add(new LatLng(31.7424590000, 121.0241830000));
         pOption.add(new LatLng(31.7387130000, 121.0214960000));
@@ -521,21 +498,19 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     @OnClick(R.id.btn_submit)
     void submit(View view) {
         boolean sendToOss = false;
-        String[] title = {"卡号", "刷卡时间", "纬度", "经度"};
-        String[] title2 = {"姓名", "卡号", "工号", "上车时间", "下车时间", "是否在车上", "刷卡次数", "上班/下班"};
+
         File file = new File(getExternalFilesDir(null) + "/Record");
         FileUtils.makeDir(file);
         System.out.println(file.toString());
-        ExcelUtils.initExcel(file.toString() + "/刷卡详细记录.xls", title, title2);
+        ExcelUtils.initExcel(file.toString() + "/刷卡详细记录.xls", title0, title1);
         String fileName = getExternalFilesDir(null) + "/Record/刷卡详细记录.xls";
-
 
         System.out.println("结束行程");
         EverySwipLogHelper everySwipLogHelper = new EverySwipLogHelper(mContext);//获取所有列表，转成EXcel 发给服务器
         RealmResults<EverySwipLogEntity> logs = everySwipLogHelper.getAllLog();
         ArrayList<ArrayList<String>> logsArray = new ArrayList<>();
         if (logs != null) {
-            for (int i = 0; i < logs.size(); i++) {
+            for (int i = 0; i < logs.size(); i++) {   //将从数据库获取的数据，转成list   写入Excel
                 EverySwipLogEntity everySwipLogEntity = logs.get(i);
 
                 ArrayList<String> logbeanList = new ArrayList<String>();
@@ -546,9 +521,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
                 logsArray.add(logbeanList);
             }
-
-            ExcelUtils.writeObjListToExcel(0, logsArray, fileName, this);
-
+            ExcelUtils.writeObjListToExcel(0, logsArray, fileName, this);   //写入sheet0
         }
 
 

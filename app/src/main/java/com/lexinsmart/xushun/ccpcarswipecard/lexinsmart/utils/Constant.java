@@ -40,4 +40,7 @@ public class Constant {
     public static final int STS_TOKEN_SUC= 13;
     public static final int FAIL= 9999;
 
+
+    public static final String[] title0 = {"卡号", "刷卡时间", "纬度", "经度"};
+    public static final String[] title1 = {"姓名", "卡号", "工号", "上车时间", "下车时间", "是否在车上", "刷卡次数", "上班/下班"};
 }
