@@ -269,7 +269,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         Date mDate = new Date();
         String dateString = DateUtils.dateToString(mDate, "MEDIUM");
-        uploadObject = "logs/" + dateString + "/" + Constant.IMEI + "/刷卡详细记录.xls";
+        uploadObject = "logs/" + dateString + "/" + Constant.IMEI + "/"+ DateUtils.getTimeShort()+".xls";
 
         mContext = this;
         toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -589,6 +589,11 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         mTvInfo.setText("提示信息");
 
         if (sendToOss) {
+            Date mDate = new Date();
+            String dateString = DateUtils.dateToString(mDate, "MEDIUM");
+            uploadObject = "logs/" + dateString + "/" + Constant.IMEI + "/"+ DateUtils.getTimeShort()+".xls";
+            initSamples();
+
             if (checkNotNull(putObjectSamples)) {
                 putObjectSamples.asyncPutObjectFromLocalFile(new ProgressCallback<PutObjectRequest, PutObjectResult>() {
                     @Override

@@ -108,4 +108,11 @@ public class DateUtils {
 
 		return date;
 	}
+
+	public static String getTimeShort() {
+		SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
+		Date currentTime = new Date();
+		String dateString = formatter.format(currentTime);
+		return dateString;
+	}
 }
