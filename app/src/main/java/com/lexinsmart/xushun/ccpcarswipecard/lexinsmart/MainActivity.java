@@ -9,6 +9,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.media.AudioManager;
@@ -82,6 +83,7 @@ import com.lexinsmart.xushun.ccpcarswipecard.R;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.CheckPermissionsActivity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.OssTestActivity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.AckRequireOk;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.AppVersionEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.EverySwipLogEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.GetInfo;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.InfoModel;
@@ -126,12 +128,16 @@ import butterknife.OnClick;
 import io.realm.RealmResults;
 
 import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.FAIL;
+import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.IMEI;
 import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.STS_TOKEN_SUC;
 import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.UPLOAD_Fail;
 import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.UPLOAD_PROGRESS;
 import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.UPLOAD_SUC;
+import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.VERSIONCODE;
+import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.VERSIONNAME;
 import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.title0;
 import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.title1;
+import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.StringUtils.getImeIlast5;
 
 /**
  * Created by xushun on 2017/10/25.
@@ -222,7 +228,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
     String cardNumberString = "";
     boolean goOnOrGooff = false; // 下班 false  上班；true
-    String topic = null;
 
     private SmdtManager mSmdtManager;
 
@@ -242,7 +247,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     private OSS oss;
     private StsTokenSamples stsTokenSamples;
     private static final String testBucket = "ccpswipcard";
-    private static String uploadObject = "logs/" + Constant.IMEI + "/刷卡详细记录.xls";
+    private static String uploadObject = "logs/" + IMEI + "/刷卡详细记录.xls";
 
     private static final String endpoint = "http://oss-cn-hangzhou.aliyuncs.com";
     private static final String uploadFilePath = "/storage/emulated/0/Android/data/com.lexinsmart.xushun.ccpcarswipecard/files/Record/刷卡详细记录.xls";
@@ -271,7 +276,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         Date mDate = new Date();   //设置上传到OSS的文件的目录结构   logs/日期/IMEI/时间
         String dateString = DateUtils.dateToString(mDate, "MEDIUM");
-        uploadObject = "logs/" + dateString + "/" + Constant.IMEI + "/"+ DateUtils.getTimeShort()+".xls";
+        uploadObject = "logs/" + dateString + "/" + IMEI + "/" + DateUtils.getTimeShort() + ".xls";
 
         mContext = this;
         toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -312,8 +317,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         TelephonyManager telephonemanage = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
 
-        topic = Constant.IMEI;
-        topicList.add("ccp/remote_card/" + topic);  //注册刷卡的话题
+        topicList.add("ccp/remote_card/" + IMEI);  //注册刷卡的话题
+        topicList.add("ccp/app_version/" + IMEI);
 //        Logger.d("topic:" + topic);
 
         if (MqttV3Service.client == null) {
@@ -564,7 +569,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         if (sendToOss) {
             Date mDate = new Date();
             String dateString = DateUtils.dateToString(mDate, "MEDIUM");
-            uploadObject = "logs/" + dateString + "/" + Constant.IMEI + "/"+ DateUtils.getTimeShort()+".xls";
+            uploadObject = "logs/" + dateString + "/" + IMEI + "/" + DateUtils.getTimeShort() + ".xls";
             initSamples();
 
             if (checkNotNull(putObjectSamples)) {
@@ -680,6 +685,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                         + " scanRecord：" + StringTool.byteHexToSting(scanRecord));
             }
             //搜索蓝牙设备并记录信号强度最强的设备
+//            if ((scanRecord != null) && (StringTool.byteHexToSting(scanRecord).contains("017f5450")) && device.getName().equals(getImeIlast5(Constant.IMEI))) {  //从广播数据中过滤掉其它蓝牙设备
+
             if ((scanRecord != null) && (StringTool.byteHexToSting(scanRecord).contains("017f5450"))) {  //从广播数据中过滤掉其它蓝牙设备
                 msgBuffer.append("搜到设备：").append(device.getName()).append(" 信号强度：").append(rssi).append("\r\n");
                 handler.sendEmptyMessage(0);
@@ -800,6 +807,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 }
 
                 handler.sendEmptyMessage(9);
+
             }
         }
 
@@ -996,6 +1004,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 //                        toolbar.getMenu().getItem(0).setIcon(R.mipmap.ic_bluetooth);
                         mImgBluetoothStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_bluetooth));
                         mTvBluetooth.setText("设备连接成功");
+
                         break;
                     case 10:
                         String name = msg.getData().getString("name");
@@ -1103,19 +1112,14 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 b.putString("staffnum", staffInfo.getStaffnumber());
                 message.setData(b);
                 handler.sendMessage(message);
-
-
                 handler.sendEmptyMessage(11);
 
                 mSoundPool.play(soundPoolMap.get(KEY_SOUND_A2), 1, 1, 0, 0, 1);
 
             }
-
-
         } else {//存在记录
 
             goOnOrGooff = mRealmHelper.qurryLogByCardNum(cardNumberString).isGetUpOrOff();
-
             SwipCardLog log = mRealmHelper.qurryLogByCardNum(cardNumberString);
             int count = mRealmHelper.getSwipCount(cardNumberString);
             Logger.d("count:" + count);
@@ -1132,7 +1136,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             logNew.setGetUpOrOff(goOnOrGooff);
 
             if (inFactory) {
-
                 // go on or go of  下班 false  上班；true
                 if (mRealmHelper.getSwipCount(cardNumberString) % 2 == 1 && goOnOrGooff) { //下车了 上班 ，场内
                     Logger.d("send:" + log);//TODO 在这里发送数据。
@@ -1245,183 +1248,172 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         MqttV3Service.publishMsg(s, Qos, 0);
     }
 
-    /**
-     * 从网络中获取到用户信息。
-     *
-     * @param realmHelper
-     * @param cardNumberString
-     * @param mHandler
-     * @param swipcount
-     * @param getUpOrOff
-     */
-    private void getUserInfo(RealmHelper realmHelper, String cardNumberString, Handler mHandler, int swipcount, boolean getUpOrOff) {
-
-        int max = 20;
-        int min = 10;
-        Random random = new Random();
-        int s = random.nextInt(max) % (max - min + 1) + min;
-
-        UserInfo userInfo = new UserInfo();
-        userInfo.setSuccess("0");
-        userInfo.setName("xushun" + s);
-        userInfo.setStaffNum("C1111" + s);
-        userInfo.setCardNum(cardNumberString);
-
-        //通知更新刷卡人信息。
-        Message message = Message.obtain(mHandler);
-        message.what = 10;
-        //通知界面更新刷卡人信息
-        Bundle b = new Bundle();
-        b.putString("name", userInfo.getName());
-        b.putString("staffnum", userInfo.getStaffNum());
-        message.setData(b);
-        mHandler.sendMessage(message);
-
-
-        SwipCardLog swipCardLog = new SwipCardLog();
-        swipCardLog.setName(userInfo.getName());
-        swipCardLog.setCardnum(userInfo.getCardNum());
-        swipCardLog.setStaffnum(userInfo.getStaffNum());
-        swipCardLog.setGetOnTime(new Timestamp(System.currentTimeMillis()).toString());
-        swipCardLog.setGetOnFlag(true);
-        swipCardLog.setSwipCount(swipcount);
-        swipCardLog.setGetUpOrOff(getUpOrOff);
-
-        realmHelper.addSwipLog(swipCardLog);
-        realmHelper.close();
-
-    }
-
-    /**
-     * 请求基础信息，姓名和工号
-     *
-     * @param cardNumberString
-     */
-    private void requestInfo(String cardNumberString, Handler mHandler) {
-
-
-        int max = 20;
-        int min = 10;
-        Random random = new Random();
-        int s = random.nextInt(max) % (max - min + 1) + min;
-
-        GetInfo getInfoResult = new GetInfo();
-        getInfoResult.setSuccess("0");
-        getInfoResult.setName("张" + s);
-        getInfoResult.setCardNum(cardNumberString);
-        getInfoResult.setStaffNum("C10" + s);
-
-        String checkintime = new Timestamp(System.currentTimeMillis() - 1000 * 60 * 60 * 19).toString();   // intime
-        String checkouttime = new Timestamp(System.currentTimeMillis() - 1000 * 60 * 60 * 9).toString(); // outtime
-        getInfoResult.setCheckouttime(checkouttime);
-        getInfoResult.setCheckintime(checkintime);//模拟 九个小时
-
-        //通知更新刷卡人信息。
-        Message message = Message.obtain(mHandler);
-        message.what = 10;
-        //通知界面更新刷卡人信息
-        Bundle b = new Bundle();
-        b.putString("name", getInfoResult.getName());
-        b.putString("staffnum", getInfoResult.getStaffNum());
-        message.setData(b);
-        mHandler.sendMessage(message);
-
-
-        String info = "";
-        if (getInfoResult.getSuccess().equals("0")) {//返回结果成功
-            Timestamp checkouttimeDate = DateUtils.StringToTimestamp(getInfoResult.getCheckouttime());
-            Timestamp checkintimeDate = DateUtils.StringToTimestamp(getInfoResult.getCheckintime());
-            if (checkouttimeDate.getTime() > checkintimeDate.getTime()) {//下班时间>上班时间
-                if (System.currentTimeMillis() - checkouttimeDate.getTime() > 6 * 60 * 60 * 1000) { //  >6h
-
-                    RealmHelper mRealmHelper = new RealmHelper(mContext);
-
-                    boolean isInFactory = false; //是否在厂区内 ，根据经纬度判断。
-                    if (isInFactory) {//在厂区内 ，下班
-                        if (mRealmHelper.isLogExist(cardNumberString)) { //存在记录
-                            if (mRealmHelper.qurryLogByCardNum(cardNumberString).isGetUpOrOff()) {//如果是上班  则下车
-                                info = "在厂区内 下车";
-                                Logger.d(info);
-                            } else {//下班  他为啥又刷了
-
-                            }
-                        } else {
-                            info = "在厂区内，下班坐车";
-                            Logger.d(info);
-                        }
-                    } else {  //在厂区外。
-                        int count = 0;
-                        Logger.d(mRealmHelper.getSwipCount(cardNumberString));
-
-                        if (mRealmHelper.isLogExist(cardNumberString)) { //信息存在
-                            count = mRealmHelper.getSwipCount(getInfoResult.getCardNum());//从数据库查询刷卡的次数。
-                        } else {
-                            count = 0;//初次添加
-                        }
-
-                        SwipCardLog swipCardLog = new SwipCardLog();
-                        swipCardLog.setName(getInfoResult.getName());
-                        swipCardLog.setCardnum(getInfoResult.getCardNum());
-                        swipCardLog.setStaffnum(getInfoResult.getStaffNum());
-                        if (count == 0) {//上班，上车，
-                            info = "厂区外，上班，上车";
-                            Logger.d(info);
-
-                            swipCardLog.setGetOnTime(new Timestamp(System.currentTimeMillis()).toString());
-                            SwipCardLog oldinfo = mRealmHelper.qurryLogByCardNum(getInfoResult.getCardNum());
-                            swipCardLog.setGetOffTime(null);
-                            swipCardLog.setGetOnFlag(true);
-                            swipCardLog.setSwipCount(1);
-                            swipCardLog.setGetUpOrOff(true);
-                            mRealmHelper.addSwipLog(swipCardLog);
-
-
-                        } else {//上班，下车
-                            info = "厂区外，上班，下车";
-                            Logger.d(info);
-
-                            SwipCardLog oldinfo = mRealmHelper.qurryLogByCardNum(getInfoResult.getCardNum());
-                            swipCardLog.setGetOnTime(oldinfo.getGetOnTime());
-                            swipCardLog.setGetOffTime(new Timestamp(System.currentTimeMillis()).toString());
-                            swipCardLog.setGetOnFlag(false);
-                            swipCardLog.setSwipCount(2);
-                            swipCardLog.setGetUpOrOff(true);
-
-                            mRealmHelper.updateSwipLog(swipCardLog);
-                        }
-                    }
-                    mRealmHelper.close();
-
-                } else if (System.currentTimeMillis() - checkouttimeDate.getTime() < 6 * 60 * 60 * 1000) { // <3h
-                    info = "下班，上车";
-                    Logger.d(info);
-
-
-                }
-            } else {//下班忘刷卡
-                info = "未打下班卡！";
-
-            }
-            Message msg = new Message();
-            msg.what = 12;
-            msg.obj = info;
-            mHandler.sendMessage(msg);
-        }
-
-        //通知界面更新 实时人数
-        mHandler.sendEmptyMessage(11);
-    }
-
-
-    //发送读写进度条显示Handler
-    private void showReadWriteDialog(String msg, int rate) {
-        Message message = new Message();
-        message.what = 4;
-        message.arg1 = rate;
-        message.obj = msg;
-        handler.sendMessage(message);
-    }
-
+    //    /**
+//     * 从网络中获取到用户信息。
+//     *
+//     * @param realmHelper
+//     * @param cardNumberString
+//     * @param mHandler
+//     * @param swipcount
+//     * @param getUpOrOff
+//     */
+//    private void getUserInfo(RealmHelper realmHelper, String cardNumberString, Handler mHandler, int swipcount, boolean getUpOrOff) {
+//
+//        int max = 20;
+//        int min = 10;
+//        Random random = new Random();
+//        int s = random.nextInt(max) % (max - min + 1) + min;
+//
+//        UserInfo userInfo = new UserInfo();
+//        userInfo.setSuccess("0");
+//        userInfo.setName("xushun" + s);
+//        userInfo.setStaffNum("C1111" + s);
+//        userInfo.setCardNum(cardNumberString);
+//
+//        //通知更新刷卡人信息。
+//        Message message = Message.obtain(mHandler);
+//        message.what = 10;
+//        //通知界面更新刷卡人信息
+//        Bundle b = new Bundle();
+//        b.putString("name", userInfo.getName());
+//        b.putString("staffnum", userInfo.getStaffNum());
+//        message.setData(b);
+//        mHandler.sendMessage(message);
+//
+//
+//        SwipCardLog swipCardLog = new SwipCardLog();
+//        swipCardLog.setName(userInfo.getName());
+//        swipCardLog.setCardnum(userInfo.getCardNum());
+//        swipCardLog.setStaffnum(userInfo.getStaffNum());
+//        swipCardLog.setGetOnTime(new Timestamp(System.currentTimeMillis()).toString());
+//        swipCardLog.setGetOnFlag(true);
+//        swipCardLog.setSwipCount(swipcount);
+//        swipCardLog.setGetUpOrOff(getUpOrOff);
+//
+//        realmHelper.addSwipLog(swipCardLog);
+//        realmHelper.close();
+//
+//    }
+//
+//    /**
+//     * 请求基础信息，姓名和工号
+//     *
+//     * @param cardNumberString
+//     */
+//    private void requestInfo(String cardNumberString, Handler mHandler) {
+//
+//
+//        int max = 20;
+//        int min = 10;
+//        Random random = new Random();
+//        int s = random.nextInt(max) % (max - min + 1) + min;
+//
+//        GetInfo getInfoResult = new GetInfo();
+//        getInfoResult.setSuccess("0");
+//        getInfoResult.setName("张" + s);
+//        getInfoResult.setCardNum(cardNumberString);
+//        getInfoResult.setStaffNum("C10" + s);
+//
+//        String checkintime = new Timestamp(System.currentTimeMillis() - 1000 * 60 * 60 * 19).toString();   // intime
+//        String checkouttime = new Timestamp(System.currentTimeMillis() - 1000 * 60 * 60 * 9).toString(); // outtime
+//        getInfoResult.setCheckouttime(checkouttime);
+//        getInfoResult.setCheckintime(checkintime);//模拟 九个小时
+//
+//        //通知更新刷卡人信息。
+//        Message message = Message.obtain(mHandler);
+//        message.what = 10;
+//        //通知界面更新刷卡人信息
+//        Bundle b = new Bundle();
+//        b.putString("name", getInfoResult.getName());
+//        b.putString("staffnum", getInfoResult.getStaffNum());
+//        message.setData(b);
+//        mHandler.sendMessage(message);
+//
+//
+//        String info = "";
+//        if (getInfoResult.getSuccess().equals("0")) {//返回结果成功
+//            Timestamp checkouttimeDate = DateUtils.StringToTimestamp(getInfoResult.getCheckouttime());
+//            Timestamp checkintimeDate = DateUtils.StringToTimestamp(getInfoResult.getCheckintime());
+//            if (checkouttimeDate.getTime() > checkintimeDate.getTime()) {//下班时间>上班时间
+//                if (System.currentTimeMillis() - checkouttimeDate.getTime() > 6 * 60 * 60 * 1000) { //  >6h
+//
+//                    RealmHelper mRealmHelper = new RealmHelper(mContext);
+//
+//                    boolean isInFactory = false; //是否在厂区内 ，根据经纬度判断。
+//                    if (isInFactory) {//在厂区内 ，下班
+//                        if (mRealmHelper.isLogExist(cardNumberString)) { //存在记录
+//                            if (mRealmHelper.qurryLogByCardNum(cardNumberString).isGetUpOrOff()) {//如果是上班  则下车
+//                                info = "在厂区内 下车";
+//                                Logger.d(info);
+//                            } else {//下班  他为啥又刷了
+//
+//                            }
+//                        } else {
+//                            info = "在厂区内，下班坐车";
+//                            Logger.d(info);
+//                        }
+//                    } else {  //在厂区外。
+//                        int count = 0;
+//                        Logger.d(mRealmHelper.getSwipCount(cardNumberString));
+//
+//                        if (mRealmHelper.isLogExist(cardNumberString)) { //信息存在
+//                            count = mRealmHelper.getSwipCount(getInfoResult.getCardNum());//从数据库查询刷卡的次数。
+//                        } else {
+//                            count = 0;//初次添加
+//                        }
+//
+//                        SwipCardLog swipCardLog = new SwipCardLog();
+//                        swipCardLog.setName(getInfoResult.getName());
+//                        swipCardLog.setCardnum(getInfoResult.getCardNum());
+//                        swipCardLog.setStaffnum(getInfoResult.getStaffNum());
+//                        if (count == 0) {//上班，上车，
+//                            info = "厂区外，上班，上车";
+//                            Logger.d(info);
+//
+//                            swipCardLog.setGetOnTime(new Timestamp(System.currentTimeMillis()).toString());
+//                            SwipCardLog oldinfo = mRealmHelper.qurryLogByCardNum(getInfoResult.getCardNum());
+//                            swipCardLog.setGetOffTime(null);
+//                            swipCardLog.setGetOnFlag(true);
+//                            swipCardLog.setSwipCount(1);
+//                            swipCardLog.setGetUpOrOff(true);
+//                            mRealmHelper.addSwipLog(swipCardLog);
+//
+//
+//                        } else {//上班，下车
+//                            info = "厂区外，上班，下车";
+//                            Logger.d(info);
+//
+//                            SwipCardLog oldinfo = mRealmHelper.qurryLogByCardNum(getInfoResult.getCardNum());
+//                            swipCardLog.setGetOnTime(oldinfo.getGetOnTime());
+//                            swipCardLog.setGetOffTime(new Timestamp(System.currentTimeMillis()).toString());
+//                            swipCardLog.setGetOnFlag(false);
+//                            swipCardLog.setSwipCount(2);
+//                            swipCardLog.setGetUpOrOff(true);
+//
+//                            mRealmHelper.updateSwipLog(swipCardLog);
+//                        }
+//                    }
+//                    mRealmHelper.close();
+//
+//                } else if (System.currentTimeMillis() - checkouttimeDate.getTime() < 6 * 60 * 60 * 1000) { // <3h
+//                    info = "下班，上车";
+//                    Logger.d(info);
+//
+//
+//                }
+//            } else {//下班忘刷卡
+//                info = "未打下班卡！";
+//
+//            }
+//            Message msg = new Message();
+//            msg.what = 12;
+//            msg.obj = info;
+//            mHandler.sendMessage(msg);
+//        }
+//
+//        //通知界面更新 实时人数
+//        mHandler.sendEmptyMessage(11);
+//    }
     //开始自动寻卡
     private boolean startAutoSearchCard() throws DeviceNoResponseException {
         //打开自动寻卡，200ms间隔，寻M1/UL卡
@@ -1684,8 +1676,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     }
 
     public class MqttProcThread implements Runnable {
-
-        String clientid = "CCP" + Constant.IMEI;
+        String clientid = "CCP" + IMEI;
 
         @Override
         public void run() {
@@ -1701,7 +1692,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         }
     }
 
-
     @SuppressWarnings("HandlerLeak")
     public Handler myHandler = new Handler() {
         @Override
@@ -1711,6 +1701,20 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 Toast.makeText(mContext, "连接成功", Toast.LENGTH_SHORT).show();
                 mTvNetStatus.setText("网络连接成功");
                 mImgNetStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_net_ok));
+
+                AppVersionEntity versionEntity = new AppVersionEntity();   //发送APPversion信息。
+                versionEntity.setCmd_type("app_version");
+
+                AppVersionEntity.CmdContentBean cmdContentBean = new AppVersionEntity.CmdContentBean();
+                cmdContentBean.setVersion_name(VERSIONNAME);
+                cmdContentBean.setVersion_code(VERSIONCODE);
+                cmdContentBean.setDevice_iemi(IMEI);
+                versionEntity.setCmd_content(cmdContentBean);
+
+                Gson gson = new Gson();
+                String s = gson.toJson(versionEntity);
+                Logger.json(s);
+                MqttV3Service.publishMsg(s, Qos, 1);
 
             } else if (msg.what == 0) {
                 Toast.makeText(mContext, "连接失败", Toast.LENGTH_SHORT).show();
@@ -1772,7 +1776,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
                             } else { //失败 失败解析
                                 mSoundPool.play(soundPoolMap.get(KEY_SOUND_A3), 1, 1, 0, 0, 1);
-
                             }
                         } else if (cmd_type.equals("ack_refresh")) {
                             Logger.d("ack_refresh");
@@ -1780,12 +1783,18 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                             if (status_code == 0) {
                                 Logger.d("更新成功：");
 
+                            } else {
+
+                            }
+                        } else if (cmd_type.equals("ack_version")) {
+                            if (status_code == 0) {
+                                Logger.d("提交软件版本成功：");
+                            } else {
+
                             }
                         }
                     }
                 }
-
-
             } else if (msg.what == 3) {
                 if (!MqttV3Service.client.isConnected()) {
                     System.out.println("MQTT:连接丢失");
@@ -1816,8 +1825,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                     myHandler.sendMessage(msg);
 
                     mScheduledExecutorService.shutdown();
-
-
                 }
             }
         }, 0 * 1000, 10 * 1000, TimeUnit.MILLISECONDS);

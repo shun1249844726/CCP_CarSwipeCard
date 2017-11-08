@@ -14,4 +14,14 @@ public class StringUtils {
             return instr;
         }
     }
+
+    public static String getImeIlast5(String iemi) {
+        String last5 = "";
+        if (iemi.length() > 5) {
+            last5 = iemi.substring(iemi.length() - 5, iemi.length());
+        }
+
+        return last5;
+
+    }
 }

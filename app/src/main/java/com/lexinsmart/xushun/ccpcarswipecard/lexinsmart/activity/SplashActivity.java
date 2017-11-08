@@ -45,6 +45,9 @@ import butterknife.OnClick;
 import jxl.Sheet;
 import jxl.Workbook;
 
+import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.VERSIONCODE;
+import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.VERSIONNAME;
+
 /**
  * Created by xushun on 2017/10/28.
  * 功能描述：
@@ -74,7 +77,10 @@ public class SplashActivity extends AppCompatActivity {
         mContext = this;
 
         mAvi.smoothToShow();
-        mTvAppversion.setText("软件版本：" + AppUtils.getVersionName(mContext));
+        VERSIONNAME = AppUtils.getVersionName(mContext);
+        VERSIONCODE =""+AppUtils.getVersionCode(mContext);
+
+        mTvAppversion.setText("软件版本：" + VERSIONNAME);
 
         TelephonyManager telephonemanage = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
 
