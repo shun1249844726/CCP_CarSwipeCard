@@ -5,7 +5,7 @@ package com.dk.bleNfc.DeviceManager;
  */
 public abstract class DeviceManagerCallback {
     //获取设备连接回调
-    public void onReceiveConnectBtDevice(boolean blnIsConnectSuc) {}
+    public void onReceiveConnectBtDevice(boolean blnIsConnectSuc,String mac) {}
 
     //断开设备连接回调
     public void onReceiveDisConnectDevice(boolean blnIsDisConnectDevice) {}

@@ -97,10 +97,10 @@ public class BleNfcDeviceService extends Service {
     //设备操作类回调
     private DeviceManagerCallback mDeviceManagerCallback = new DeviceManagerCallback() {
         @Override
-        public void onReceiveConnectBtDevice(boolean blnIsConnectSuc) {
-            super.onReceiveConnectBtDevice(blnIsConnectSuc);
+        public void onReceiveConnectBtDevice(boolean blnIsConnectSuc,String mac) {
+            super.onReceiveConnectBtDevice(blnIsConnectSuc,mac);
             if (deviceManagerCallback != null) {
-                deviceManagerCallback.onReceiveConnectBtDevice(blnIsConnectSuc);
+                deviceManagerCallback.onReceiveConnectBtDevice(blnIsConnectSuc,mac);
             }
             if (blnIsConnectSuc) {
                 Log.d(TAG, "BleNfcDeviceService设备连接成功");

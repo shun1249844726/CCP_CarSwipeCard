@@ -308,7 +308,7 @@ public class DeviceManager {
     }
 
     //根据蓝牙MAC地址连接设备接口
-    public void requestConnectBleDevice(String strBleAddr) {
+    public void requestConnectBleDevice(final String strBleAddr) {
         if (strBleAddr == null) {
             return;
         }
@@ -318,9 +318,9 @@ public class DeviceManager {
             public void onBleConnect(boolean isConnectSucceed) {
                 if (mDeviceManagerCallback != null) {
                     if (isConnectSucceed) {
-                        mDeviceManagerCallback.onReceiveConnectBtDevice(true);
+                        mDeviceManagerCallback.onReceiveConnectBtDevice(true,strBleAddr);
                     } else {
-                        mDeviceManagerCallback.onReceiveConnectBtDevice(false);
+                        mDeviceManagerCallback.onReceiveConnectBtDevice(false,strBleAddr);
                     }
                 }
             }
@@ -328,20 +328,20 @@ public class DeviceManager {
 
         if (!status) {
             if (mDeviceManagerCallback != null) {
-                mDeviceManagerCallback.onReceiveConnectBtDevice(false);
+                mDeviceManagerCallback.onReceiveConnectBtDevice(false,strBleAddr);
             }
         }
     }
 
     //根据蓝牙MAC地址连接设备接口
-    public void requestConnectBleDevice(String strBleAddr, onReceiveConnectBtDeviceListener l) {
+    public void requestConnectBleDevice(final String strBleAddr, onReceiveConnectBtDeviceListener l) {
         mOnReceiveConnectBtDeviceListener = l;
         boolean status = bleManager.connect(strBleAddr, new BleManager.onBleConnectListener() {
             @Override
             public void onBleConnect(boolean isConnectSucceed) {
                 if (isConnectSucceed) {
                     if (mDeviceManagerCallback != null) {
-                        mDeviceManagerCallback.onReceiveConnectBtDevice(true);
+                        mDeviceManagerCallback.onReceiveConnectBtDevice(true,strBleAddr);
                     }
                     if (mOnReceiveConnectBtDeviceListener != null) {
                         mOnReceiveConnectBtDeviceListener.onReceiveConnectBtDevice(true);
@@ -349,7 +349,7 @@ public class DeviceManager {
                 }
                 else {
                     if (mDeviceManagerCallback != null) {
-                        mDeviceManagerCallback.onReceiveConnectBtDevice(false);
+                        mDeviceManagerCallback.onReceiveConnectBtDevice(false,strBleAddr);
                     }
                     if (mOnReceiveConnectBtDeviceListener != null) {
                         mOnReceiveConnectBtDeviceListener.onReceiveConnectBtDevice(false);
@@ -360,7 +360,7 @@ public class DeviceManager {
 
         if (!status) {
             if (mDeviceManagerCallback != null) {
-                mDeviceManagerCallback.onReceiveConnectBtDevice(false);
+                mDeviceManagerCallback.onReceiveConnectBtDevice(false,strBleAddr);
             }
 
             if (mOnReceiveConnectBtDeviceListener != null) {

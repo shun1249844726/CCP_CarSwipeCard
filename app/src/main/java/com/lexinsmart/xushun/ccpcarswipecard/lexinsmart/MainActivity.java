@@ -687,7 +687,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             //搜索蓝牙设备并记录信号强度最强的设备
 //            if ((scanRecord != null) && (StringTool.byteHexToSting(scanRecord).contains("017f5450")) && device.getName().equals(getImeIlast5(Constant.IMEI))) {  //从广播数据中过滤掉其它蓝牙设备
 
-            if ((scanRecord != null) && (StringTool.byteHexToSting(scanRecord).contains("017f5450"))) {  //从广播数据中过滤掉其它蓝牙设备
+
+            if ((scanRecord != null) && (StringTool.byteHexToSting(scanRecord).contains("017f5450")) ) {  //从广播数据中过滤掉其它蓝牙设备
                 msgBuffer.append("搜到设备：").append(device.getName()).append(" 信号强度：").append(rssi).append("\r\n");
                 handler.sendEmptyMessage(0);
                 if (mNearestBle != null) {
@@ -786,8 +787,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     private DeviceManagerCallback deviceManagerCallback = new DeviceManagerCallback() {
         @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
         @Override
-        public void onReceiveConnectBtDevice(boolean blnIsConnectSuc) {
-            super.onReceiveConnectBtDevice(blnIsConnectSuc);
+        public void onReceiveConnectBtDevice(boolean blnIsConnectSuc,String mac) {
+            super.onReceiveConnectBtDevice(blnIsConnectSuc,mac);
             if (blnIsConnectSuc) {
                 System.out.println("Activity设备连接成功");
                 msgBuffer.delete(0, msgBuffer.length());
@@ -807,6 +808,15 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 }
 
                 handler.sendEmptyMessage(9);
+
+                System.out.println("mac:"+mac);
+
+                SharedPreferences preferences = getSharedPreferences("MAC", MODE_PRIVATE);
+                SharedPreferences.Editor editor = preferences.edit();
+                editor.clear();
+                editor.putString("MAC", mac);
+                editor.commit();
+
 
             }
         }
