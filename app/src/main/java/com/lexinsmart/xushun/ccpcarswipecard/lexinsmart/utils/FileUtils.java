@@ -1,5 +1,6 @@
 package com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils;
 
+import android.content.SharedPreferences;
 import android.view.View;
 
 import java.io.File;

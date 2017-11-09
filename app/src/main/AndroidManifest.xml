@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools"
           package="com.lexinsmart.xushun.ccpcarswipecard">
 
     <uses-sdk android:minSdkVersion="18"/>
@@ -100,6 +101,12 @@
 
         </activity>
         <activity android:name=".lexinsmart.activity.OssTestActivity">
+
+        </activity>
+        <activity
+            android:name=".lexinsmart.activity.StaffListActivity"
+            android:theme="@android:style/Theme.Material.Light.Dialog"
+            tools:targetApi="lollipop">
 
         </activity>
 

@@ -82,6 +82,7 @@ import com.ibm.micro.client.mqttv3.MqttSecurityException;
 import com.lexinsmart.xushun.ccpcarswipecard.R;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.CheckPermissionsActivity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.OssTestActivity;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.StaffListActivity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.AckRequireOk;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.AppVersionEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.EverySwipLogEntity;
@@ -605,6 +606,18 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
     }
 
+    @OnClick(R.id.cardview2)
+    void showStaffList() {
+        RealmHelper realmHelper = new RealmHelper(mContext);
+        if (realmHelper.getAllLog() != null) {
+
+            Intent intent = new Intent(MainActivity.this, StaffListActivity.class);
+            startActivity(intent);
+
+        }
+
+    }
+
     private boolean checkNotNull(Object obj) {
         if (obj != null) {
             return true;
@@ -626,13 +639,14 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         int id = item.getItemId();
 
-//        if (id == R.id.action_bluetooth) {
-//            if ((bleNfcDevice.isConnection() == BleManager.STATE_CONNECTED)) {
-//                bleNfcDevice.requestDisConnectDevice();
-//            } else {
-//                searchNearestBleDevice();
-//            }
-//        }
+        if (id == R.id.action_bluetooth) {
+            SharedPreferences sharedPreferences = getSharedPreferences("MAC", MODE_PRIVATE);
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+
+            editor.clear();
+            editor.commit();
+            Toast.makeText(mContext, "解除蓝牙绑定成功！", Toast.LENGTH_SHORT).show();
+        }
 //        if (id == R.id.action_settings) {
 //
 //        }
@@ -688,7 +702,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 //            if ((scanRecord != null) && (StringTool.byteHexToSting(scanRecord).contains("017f5450")) && device.getName().equals(getImeIlast5(Constant.IMEI))) {  //从广播数据中过滤掉其它蓝牙设备
 
 
-            if ((scanRecord != null) && (StringTool.byteHexToSting(scanRecord).contains("017f5450")) ) {  //从广播数据中过滤掉其它蓝牙设备
+            if ((scanRecord != null) && (StringTool.byteHexToSting(scanRecord).contains("017f5450")) && isLocalMac(device.getAddress())) {  //从广播数据中过滤掉其它蓝牙设备
                 msgBuffer.append("搜到设备：").append(device.getName()).append(" 信号强度：").append(rssi).append("\r\n");
                 handler.sendEmptyMessage(0);
                 if (mNearestBle != null) {
@@ -787,8 +801,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     private DeviceManagerCallback deviceManagerCallback = new DeviceManagerCallback() {
         @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
         @Override
-        public void onReceiveConnectBtDevice(boolean blnIsConnectSuc,String mac) {
-            super.onReceiveConnectBtDevice(blnIsConnectSuc,mac);
+        public void onReceiveConnectBtDevice(boolean blnIsConnectSuc, String mac) {
+            super.onReceiveConnectBtDevice(blnIsConnectSuc, mac);
             if (blnIsConnectSuc) {
                 System.out.println("Activity设备连接成功");
                 msgBuffer.delete(0, msgBuffer.length());
@@ -809,7 +823,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
                 handler.sendEmptyMessage(9);
 
-                System.out.println("mac:"+mac);
+                System.out.println("mac:" + mac);
 
                 SharedPreferences preferences = getSharedPreferences("MAC", MODE_PRIVATE);
                 SharedPreferences.Editor editor = preferences.edit();
@@ -1258,7 +1272,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         MqttV3Service.publishMsg(s, Qos, 0);
     }
 
-    //    /**
+    //        /**
 //     * 从网络中获取到用户信息。
 //     *
 //     * @param realmHelper
@@ -1840,4 +1854,21 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         }, 0 * 1000, 10 * 1000, TimeUnit.MILLISECONDS);
     }
 
+    public boolean isLocalMac(String mac) {
+        boolean islocal = false;
+        SharedPreferences sharedPreferences = getSharedPreferences("MAC", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+
+
+        String localmac = sharedPreferences.getString("MAC", "");
+        if (localmac.equals("")) {
+            return true;
+        }
+
+        if (localmac.equals(mac)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 }

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="80dp"
+              android:gravity="center"
+              android:orientation="vertical"
+              android:minHeight="?android:attr/listPreferredItemHeight">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tv_staff_list_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:lines="1"
+            android:gravity="center"
+            android:text="姓名"/>
+
+        <TextView
+            android:id="@+id/tv_staff_list_staffnum"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:lines="1"
+            android:gravity="center"
+            android:text="工号"/>
+
+        <TextView
+            android:id="@+id/tv_staff_list_swipcount"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:lines="1"
+            android:gravity="center"
+            android:text="刷卡次数"/>
+    </LinearLayout>
+
+</LinearLayout>
