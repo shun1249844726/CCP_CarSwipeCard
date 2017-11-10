@@ -123,13 +123,15 @@ public class SplashActivity extends AppCompatActivity {
                         if ((boolean) data) {
                             UpdateChecker.checkForDialog(SplashActivity.this);
 
+                            mTvLodingConfig.setText("等待下载更新！");
+                            mBtnGetInApp.setVisibility(View.GONE);
+
                         } else {
                             mAvi.hide();
                             Intent intent = new Intent(SplashActivity.this, MainActivity.class);
                             startActivity(intent);
                         }
                     }
-
                     @Override
                     public void onDataFailed() {
                         System.out.println("onDataFailed");
@@ -139,7 +141,7 @@ public class SplashActivity extends AppCompatActivity {
             }
         }, 2000);
 
-        mTvLodingConfig.setText("加载完成！点击下面按钮进入主页");
+        mTvLodingConfig.setText("加载完成，等待进入主页！");
 
 
     }

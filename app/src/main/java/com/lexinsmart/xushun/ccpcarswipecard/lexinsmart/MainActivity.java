@@ -1058,6 +1058,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                     case 12:
                         mTvInfo.setText(msg.obj.toString());
                         break;
+
                 }
             }
         };
@@ -1668,20 +1669,34 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 //经纬度：   [词典]	longitude and latitude
                 myLatLng = new LatLng(amapLocation.getLatitude(), amapLocation.getLongitude());
 
-                mImgGpsStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_gps_location));
-                mTvGpsStatus.setText("定位成功！");
+                showLocationStatus(13);
+                System.out.println("定位："+"成功");
+
+
             } else {
                 String errText = "定位失败," + amapLocation.getErrorCode() + ": "
                         + amapLocation.getErrorInfo();
                 Log.e("AmapErr", errText);
+                System.out.println("定位："+"失败");
 
-                mImgGpsStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_gps_location_no));
-                mTvGpsStatus.setText("定位失败！");
+                showLocationStatus(14);
+
 
             }
         }
     }
 
+    public void showLocationStatus(int what){
+        if (what == 13){
+            Logger.d("check location no ");
+            mImgGpsStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_gps_location));
+            mTvGpsStatus.setText("定位成功！");
+        }else if (what == 14){
+            Logger.d("check location ok");
+            mImgGpsStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_gps_location_no));
+            mTvGpsStatus.setText("定位失败！");
+        }
+    }
     @Override
     public void activate(OnLocationChangedListener listener) {
         mListener = listener;

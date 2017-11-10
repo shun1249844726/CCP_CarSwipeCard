@@ -33,9 +33,5 @@ public class ImportDataActivity extends CheckPermissionsActivity {
 
         setContentView(R.layout.activity_import_userdata);
 
-
     }
-
-
-
 }
