@@ -7,7 +7,7 @@
         android:orderInCategory="100"
         android:icon="@mipmap/ic_unbind"
         android:title="取消蓝牙绑定"
-        app:showAsAction="always"/>
+        app:showAsAction="never"/>
     <item android:id="@+id/action_map_showHide"
           android:orderInCategory="100"
           android:icon="@mipmap/ic_map_show"

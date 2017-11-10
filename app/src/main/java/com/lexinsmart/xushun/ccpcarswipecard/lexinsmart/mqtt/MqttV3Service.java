@@ -142,7 +142,7 @@ public class MqttV3Service {
     }
 
     //重新链接
-    public static void startReconnect() {
+    public static void startReconnect(final Handler handler) {
         System.out.println("MQTT:reconnection!");
         scheduler = Executors.newSingleThreadScheduledExecutor();
         scheduler.scheduleAtFixedRate(new Runnable() {
@@ -155,6 +155,15 @@ public class MqttV3Service {
                         client.subscribe("ccp/remote_card/"+Constant.IMEI);
                         System.out.println("MQTT:reconnection ok!");
 
+                        System.out.println(" :重连成功，通知更新界面");
+                        Message msg = new Message();
+                        msg.what = 1;
+                        msg.obj = "strresult";
+                        handler.sendMessage(msg);
+
+                        scheduler.shutdown();
+
+                        System.out.println("结束重连进程");
 
                     } catch (MqttSecurityException e) {
                         e.printStackTrace();

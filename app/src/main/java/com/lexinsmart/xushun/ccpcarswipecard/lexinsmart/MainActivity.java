@@ -591,8 +591,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                     @Override
                     public void onSuccess(PutObjectRequest request, PutObjectResult result) {
                         stsHandler.sendEmptyMessage(UPLOAD_SUC);
-
-
                     }
 
                     @Override
@@ -603,7 +601,21 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 });
             }
         }
+        if (MqttV3Service.isConnected() ){
+            AppVersionEntity versionEntity = new AppVersionEntity();   //发送APPversion信息。
+            versionEntity.setCmd_type("app_version");
 
+            AppVersionEntity.CmdContentBean cmdContentBean = new AppVersionEntity.CmdContentBean();
+            cmdContentBean.setVersion_name(VERSIONNAME);
+            cmdContentBean.setVersion_code(VERSIONCODE);
+            cmdContentBean.setDevice_iemi(IMEI);
+            versionEntity.setCmd_content(cmdContentBean);
+
+            Gson gson = new Gson();
+            String s = gson.toJson(versionEntity);
+            Logger.json(s);
+            MqttV3Service.publishMsg(s, 0, 1);
+        }
     }
 
     @OnClick(R.id.cardview2)
@@ -1594,6 +1606,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     protected void onPause() {
         super.onPause();
         mMapView.onPause();
+
         deactivate();
     }
 
@@ -1726,20 +1739,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 mTvNetStatus.setText("网络连接成功");
                 mImgNetStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_net_ok));
 
-                AppVersionEntity versionEntity = new AppVersionEntity();   //发送APPversion信息。
-                versionEntity.setCmd_type("app_version");
-
-                AppVersionEntity.CmdContentBean cmdContentBean = new AppVersionEntity.CmdContentBean();
-                cmdContentBean.setVersion_name(VERSIONNAME);
-                cmdContentBean.setVersion_code(VERSIONCODE);
-                cmdContentBean.setDevice_iemi(IMEI);
-                versionEntity.setCmd_content(cmdContentBean);
-
-                Gson gson = new Gson();
-                String s = gson.toJson(versionEntity);
-                Logger.json(s);
-                MqttV3Service.publishMsg(s, Qos, 1);
-
             } else if (msg.what == 0) {
                 Toast.makeText(mContext, "连接失败", Toast.LENGTH_SHORT).show();
                 mTvNetStatus.setText("网络连接失败\n点击重连");
@@ -1824,35 +1823,14 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                     System.out.println("MQTT:连接丢失");
                     Toast.makeText(mContext, "断开连接", Toast.LENGTH_SHORT).show();
                     mImgNetStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_net_disconn));
-                    mTvNetStatus.setText("网络断开\n重启手机重连");
-
-                    MqttV3Service.startReconnect();
-                    startReconnect();
+                    mTvNetStatus.setText("网络断开\n请按返回键");
+                    MqttV3Service.startReconnect(myHandler);
                 }
             }
         }
     };
     private ScheduledExecutorService mScheduledExecutorService;
 
-    //重新链接
-    public void startReconnect() {
-        System.out.println("MQTT:reconnection!");
-        mScheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-        mScheduledExecutorService.scheduleAtFixedRate(new Runnable() {
-            public void run() {
-                System.out.println("MQTT:监听MQTT重新连接成功没");
-                if (MqttV3Service.client.isConnected()) {
-                    System.out.println("MQTT:重连成功，通知更新界面");
-                    Message msg = new Message();
-                    msg.what = 1;
-                    msg.obj = "strresult";
-                    myHandler.sendMessage(msg);
-
-                    mScheduledExecutorService.shutdown();
-                }
-            }
-        }, 0 * 1000, 10 * 1000, TimeUnit.MILLISECONDS);
-    }
 
     public boolean isLocalMac(String mac) {
         boolean islocal = false;
