@@ -109,6 +109,7 @@ import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.FileUtils;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.JsonUtils;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.StringUtils;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.UiUtils;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.toasty.Toasty;
 import com.orhanobut.logger.Logger;
 
 import java.io.File;
@@ -253,6 +254,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     private static final String endpoint = "http://oss-cn-hangzhou.aliyuncs.com";
     private static final String uploadFilePath = "/storage/emulated/0/Android/data/com.lexinsmart.xushun.ccpcarswipecard/files/Record/刷卡详细记录.xls";
 
+    boolean sendToOss = false;
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -355,7 +358,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         soundPoolMap.put(KEY_SOUND_A4, mSoundPool.load(this, R.raw.donotswip, 1));
 
 
-        initStsData();  //初始化 OSS Sts   获取TOKEN 等信息。
+
     }
 
     /**
@@ -376,15 +379,19 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             boolean handled = false;
             switch (msg.what) {
                 case UPLOAD_SUC:
-                    Toast.makeText(MainActivity.this, "上传文件成功！", Toast.LENGTH_SHORT).show();
+                    Toasty.success(MainActivity.this, "上传文件成功！!", Toast.LENGTH_SHORT, true).show();
+
                     handled = true;
                     break;
                 case FAIL:
-                    Toast.makeText(MainActivity.this, "失败", Toast.LENGTH_SHORT).show();
+                    Toasty.error(MainActivity.this, "上传文件失败！!", Toast.LENGTH_SHORT, true).show();
+
                     handled = true;
                     break;
                 case STS_TOKEN_SUC:
-                    Toast.makeText(MainActivity.this, "获取认证成功", Toast.LENGTH_SHORT).show();
+                    Toasty.success(MainActivity.this, "获取认证成功！!", Toast.LENGTH_SHORT, true).show();
+
+
                     StsModel response = (StsModel) msg.obj;
                     setOssClient(response.Credentials.AccessKeyId, response.Credentials.AccessKeySecret, response.Credentials.SecurityToken);
                     System.out.println("-------StsToken.Expiration-------\n" + response.Credentials.Expiration);
@@ -392,13 +399,49 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                     System.out.println("-------StsToken.SecretKeyId-------\n" + response.Credentials.AccessKeySecret);
                     System.out.println("-------StsToken.SecurityToken-------\n" + response.Credentials.SecurityToken);
                     handled = true;
+
+
+                    if (sendToOss) {
+                        Date mDate = new Date();
+                        String dateString = DateUtils.dateToString(mDate, "MEDIUM");
+                        uploadObject = "logs/" + dateString + "/" + IMEI + "/" + DateUtils.getTimeShort() + ".xls";
+                        initSamples();
+
+                        if (checkNotNull(putObjectSamples)) {
+                            putObjectSamples.asyncPutObjectFromLocalFile(new ProgressCallback<PutObjectRequest, PutObjectResult>() {
+                                @Override
+                                public void onProgress(PutObjectRequest request, long currentSize, long totalSize) {
+
+                                    Message msg = Message.obtain();
+                                    msg.what = UPLOAD_PROGRESS;
+                                    Bundle data = new Bundle();
+                                    data.putLong("currentSize", currentSize);
+                                    data.putLong("totalSize", totalSize);
+                                    msg.setData(data);
+                                    stsHandler.sendMessage(msg);
+
+                                }
+
+                                @Override
+                                public void onSuccess(PutObjectRequest request, PutObjectResult result) {
+                                    stsHandler.sendEmptyMessage(UPLOAD_SUC);
+                                }
+
+                                @Override
+                                public void onFailure(PutObjectRequest request, ClientException clientException, ServiceException serviceException) {
+                                    stsHandler.sendEmptyMessage(UPLOAD_Fail);
+
+                                }
+                            });
+                            sendToOss = false;
+                        }
+                    }
                     break;
             }
             return handled;
         }
     });
     private OSSCredentialProvider mCredentialProvider;
-    private MultipartUploadSamples multipartUploadSamples;
 
     public void setOssClient(String ak, String sk, String token) {
         if (mCredentialProvider == null || oss == null) {
@@ -420,7 +463,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     }
 
     private void initSamples() {//初始化OSS的上传的东西
-        multipartUploadSamples = new MultipartUploadSamples(oss, testBucket, uploadObject, uploadFilePath, stsHandler);
         putObjectSamples = new PutObjectSamples(oss, testBucket, uploadObject, uploadFilePath);
     }
 
@@ -505,7 +547,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
     @OnClick(R.id.btn_submit)
     void submit(View view) {
-        boolean sendToOss = false;
+        initStsData();  //初始化 OSS Sts   获取TOKEN 等信息。
+
 
         File file = new File(getExternalFilesDir(null) + "/Record");
         FileUtils.makeDir(file);
@@ -569,40 +612,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         mTvNowCount.setText("0 人");
         mTvInfo.setText("提示信息");
 
-        if (sendToOss) {
-            Date mDate = new Date();
-            String dateString = DateUtils.dateToString(mDate, "MEDIUM");
-            uploadObject = "logs/" + dateString + "/" + IMEI + "/" + DateUtils.getTimeShort() + ".xls";
-            initSamples();
 
-            if (checkNotNull(putObjectSamples)) {
-                putObjectSamples.asyncPutObjectFromLocalFile(new ProgressCallback<PutObjectRequest, PutObjectResult>() {
-                    @Override
-                    public void onProgress(PutObjectRequest request, long currentSize, long totalSize) {
-
-                        Message msg = Message.obtain();
-                        msg.what = UPLOAD_PROGRESS;
-                        Bundle data = new Bundle();
-                        data.putLong("currentSize", currentSize);
-                        data.putLong("totalSize", totalSize);
-                        msg.setData(data);
-                        stsHandler.sendMessage(msg);
-
-                    }
-
-                    @Override
-                    public void onSuccess(PutObjectRequest request, PutObjectResult result) {
-                        stsHandler.sendEmptyMessage(UPLOAD_SUC);
-                    }
-
-                    @Override
-                    public void onFailure(PutObjectRequest request, ClientException clientException, ServiceException serviceException) {
-                        stsHandler.sendEmptyMessage(UPLOAD_Fail);
-
-                    }
-                });
-            }
-        }
         if (MqttV3Service.isConnected()) {
             AppVersionEntity versionEntity = new AppVersionEntity();   //发送APPversion信息。
             versionEntity.setCmd_type("app_version");
@@ -618,6 +628,9 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             Logger.json(s);
             MqttV3Service.publishMsg(s, 0, 1);
         }
+
+
+
     }
 
     @OnClick(R.id.cardview2)
@@ -636,7 +649,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         if (obj != null) {
             return true;
         }
-        Toast.makeText(MainActivity.this, "init Samples fail", Toast.LENGTH_SHORT).show();
+        Toasty.error(MainActivity.this, "init Samples fail!", Toast.LENGTH_SHORT, true).show();
+
         return false;
     }
 
@@ -659,7 +673,9 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
             editor.clear();
             editor.commit();
-            Toast.makeText(mContext, "解除蓝牙绑定成功！", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(mContext, "解除蓝牙绑定成功！", Toast.LENGTH_SHORT).show();
+            Toasty.success(MainActivity.this, "解除蓝牙绑定成功！", Toast.LENGTH_SHORT, true).show();
+
         }
 //        if (id == R.id.action_settings) {
 //
@@ -1760,12 +1776,15 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
             if (msg.what == 1) {
-                Toast.makeText(mContext, "连接成功", Toast.LENGTH_SHORT).show();
+                Toasty.success(MainActivity.this, "网络连接成功!", Toast.LENGTH_SHORT, true).show();
+
                 mTvNetStatus.setText("网络连接成功");
                 mImgNetStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_net_ok));
 
             } else if (msg.what == 0) {
-                Toast.makeText(mContext, "连接失败", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(mContext, "连接失败", Toast.LENGTH_SHORT).show();
+                Toasty.error(MainActivity.this, "网络连接失败!", Toast.LENGTH_SHORT, true).show();
+
                 mTvNetStatus.setText("网络连接失败\n点击重连");
                 mImgNetStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_net_disconn));
             } else if (msg.what == 2) {
@@ -1846,7 +1865,9 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             } else if (msg.what == 3) {
                 if (!MqttV3Service.client.isConnected()) {
                     System.out.println("MQTT:连接丢失");
-                    Toast.makeText(mContext, "断开连接", Toast.LENGTH_SHORT).show();
+//                    Toast.makeText(mContext, "断开连接", Toast.LENGTH_SHORT).show();
+                    Toasty.error(MainActivity.this, "断开连接!", Toast.LENGTH_SHORT, true).show();
+
                     mImgNetStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_net_disconn));
                     mTvNetStatus.setText("网络断开\n请按返回键");
 

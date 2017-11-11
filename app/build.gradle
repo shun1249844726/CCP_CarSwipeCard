@@ -61,4 +61,5 @@ dependencies {
     compile 'com.aliyun.dpa:oss-android-sdk:2.4.4'
     compile 'com.squareup.okhttp3:okhttp:3.4.1'
     compile 'com.squareup.okio:okio:1.9.0'
+
 }

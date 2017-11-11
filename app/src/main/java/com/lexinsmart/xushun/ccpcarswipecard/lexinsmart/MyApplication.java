@@ -17,23 +17,26 @@ import io.realm.RealmConfiguration;
  * 心情：
  */
 
-public class MyApplication  extends Application {
+public class MyApplication extends Application {
     private String TAG = "CCP_Logger";
+
     @Override
     public void onCreate() {
         super.onCreate();
-        SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd");
-        java.util.Date date=new java.util.Date();
-        String str=sdf.format(date);
-        File dir = new File(getExternalFilesDir(null)+"/realm");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        java.util.Date date = new java.util.Date();
+        String str = sdf.format(date);
+        File dir = new File(getExternalFilesDir(null) + "/realm");
         Realm.init(this);
-        RealmConfiguration configuration=new RealmConfiguration.Builder()
-                .name(str+RealmHelper.DB_NAME)
+        RealmConfiguration configuration = new RealmConfiguration.Builder()
+                .name(str + RealmHelper.DB_NAME)
                 .directory(dir)
                 .deleteRealmIfMigrationNeeded()
                 .build();
         Realm.setDefaultConfiguration(configuration);
 
         Logger.init(TAG);
+
+
     }
 }

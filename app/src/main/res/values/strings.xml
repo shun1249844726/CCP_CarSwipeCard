@@ -27,4 +27,6 @@
     <string name="android_auto_update_download_progress">正在下载:%1$d%%</string>
 
     <string name="android_auto_update_dialog_checking">正在检查版本</string>
+
+    <string name="mqtt_conn_ok">连接成功</string>
 </resources>
