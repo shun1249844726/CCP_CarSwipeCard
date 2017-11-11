@@ -153,6 +153,7 @@ public class MqttV3Service {
                         client.setCallback(callback);
                         client.connect(conOptions);
                         client.subscribe("ccp/remote_card/"+Constant.IMEI);
+                        client.subscribe("ccp/app_version/"+Constant.IMEI);
                         System.out.println("MQTT:reconnection ok!");
 
                         System.out.println(" :重连成功，通知更新界面");

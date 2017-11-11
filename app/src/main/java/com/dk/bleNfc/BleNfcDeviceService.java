@@ -3,6 +3,7 @@ package com.dk.bleNfc;
 import android.app.Service;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
@@ -44,14 +45,32 @@ public class BleNfcDeviceService extends Service {
         super.onCreate();
 
         //初始设备操作类
-        scanner = new Scanner(BleNfcDeviceService.this, mScannerCallback);
-        bleNfcDevice = new BleNfcDevice(BleNfcDeviceService.this);
+        scanner = new Scanner(com.dk.bleNfc.BleNfcDeviceService.this, mScannerCallback);
+        bleNfcDevice = new BleNfcDevice(com.dk.bleNfc.BleNfcDeviceService.this);
         bleNfcDevice.setCallBack(mDeviceManagerCallback);
 
         //开始搜索并连接最近的一个设备
         //startScanAndConnectTheNearestDevice();
     }
+    public boolean isLocalMac(String mac) {
+        boolean islocal = false;
+        SharedPreferences sharedPreferences = getSharedPreferences("MAC", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
 
+
+        String localmac = sharedPreferences.getString("MAC", "");
+        System.out.println("local："+localmac  + "  mac2: "+mac);
+
+        if (localmac.equals("")) {
+            return true;
+        }
+
+        if (localmac.equals(mac)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
     //蓝牙搜索回调
     private ScannerCallback mScannerCallback = new ScannerCallback() {
         @Override
@@ -62,7 +81,8 @@ public class BleNfcDeviceService extends Service {
             }
             Log.d(TAG, "Activity搜到设备：" + device.getName() + "信号强度：" + rssi );
             //搜索蓝牙设备并记录信号强度最强的设备
-            if ( (device.getName() != null) && (device.getName().contains("UNISMES") || device.getName().contains("BLE_NFC")) ) {
+
+            if ( (device.getName() != null) && (device.getName().contains("UNISMES") || device.getName().contains("BLE_NFC") || isLocalMac(device.getAddress())) ) {
                 if (mNearestBle != null) {
                     if (rssi > lastRssi) {
                         mNearestBleLock.lock();
@@ -113,7 +133,6 @@ public class BleNfcDeviceService extends Service {
             if (deviceManagerCallback != null) {
                 deviceManagerCallback.onReceiveDisConnectDevice(blnIsDisConnectDevice);
             }
-            //设备断开连接后自动重连
             startScanAndConnectTheNearestDevice();
             Log.d(TAG, "BleNfcDeviceService设备断开链接");
         }
@@ -215,8 +234,8 @@ public class BleNfcDeviceService extends Service {
     }
 
     public class LocalBinder extends Binder {
-        public BleNfcDeviceService getService() {
-            return BleNfcDeviceService.this;
+        public com.dk.bleNfc.BleNfcDeviceService getService() {
+            return com.dk.bleNfc.BleNfcDeviceService.this;
         }
     }
 

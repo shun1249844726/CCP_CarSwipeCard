@@ -20,7 +20,7 @@ import java.io.UnsupportedEncodingException;
  */
 public class DeviceManager {
     public final static String SDK_VERSIONS = "v2.1.0 20170531";
-    private DeviceManagerCallback mDeviceManagerCallback = null;
+    private com.dk.bleNfc.DeviceManager.DeviceManagerCallback mDeviceManagerCallback = null;
     public BleManager bleManager = null;
 
     public CpuCard cpuCard;
@@ -478,47 +478,47 @@ public class DeviceManager {
                             System.arraycopy(rcvBytes, 1, uidBytes, 0, 4);
                             atrBytes = new byte[rcvBytes.length - 5];
                             System.arraycopy(rcvBytes, 5, atrBytes, 0, rcvBytes.length - 5);
-                            cpuCard = new CpuCard(DeviceManager.this, uidBytes, atrBytes);
+                            cpuCard = new CpuCard(com.dk.bleNfc.DeviceManager.DeviceManager.this, uidBytes, atrBytes);
                         }
                         else if (cardType == CARD_TYPE_MIFARE) {
                             uidBytes = new byte[4];
                             System.arraycopy(rcvBytes, 1, uidBytes, 0, 4);
                             atrBytes = new byte[rcvBytes.length - 5];
                             System.arraycopy(rcvBytes, 5, atrBytes, 0, rcvBytes.length - 5);
-                            mifare = new Mifare(DeviceManager.this, uidBytes, atrBytes);
+                            mifare = new Mifare(com.dk.bleNfc.DeviceManager.DeviceManager.this, uidBytes, atrBytes);
                         }
                         else if (cardType == CARD_TYPE_ISO15693) {
                             uidBytes = new byte[8];
                             atrBytes = new byte[1];
                             System.arraycopy(rcvBytes, 1, uidBytes, 0, 8);
-                            iso15693Card = new Iso15693Card(DeviceManager.this, uidBytes, atrBytes);
+                            iso15693Card = new Iso15693Card(com.dk.bleNfc.DeviceManager.DeviceManager.this, uidBytes, atrBytes);
                         }
                         else if (cardType == CARD_TYPE_ULTRALIGHT) {
                             uidBytes = new byte[7];
                             System.arraycopy(rcvBytes, 1, uidBytes, 0, 7);
                             atrBytes = new byte[rcvBytes.length - 8];
                             System.arraycopy(rcvBytes, 8, atrBytes, 0, rcvBytes.length - 8);
-                            ultralight = new Ultralight(DeviceManager.this, uidBytes, atrBytes);
-                            ntag21x = new Ntag21x(DeviceManager.this, uidBytes, atrBytes);
+                            ultralight = new Ultralight(com.dk.bleNfc.DeviceManager.DeviceManager.this, uidBytes, atrBytes);
+                            ntag21x = new Ntag21x(com.dk.bleNfc.DeviceManager.DeviceManager.this, uidBytes, atrBytes);
                         }
                         else if (cardType == CARD_TYPE_DESFire) {
                             uidBytes = new byte[7];
                             System.arraycopy(rcvBytes, 1, uidBytes, 0, 7);
                             atrBytes = new byte[rcvBytes.length - 8];
                             System.arraycopy(rcvBytes, 8, atrBytes, 0, rcvBytes.length - 8);
-                            desFire = new DESFire(DeviceManager.this, uidBytes, atrBytes);
+                            desFire = new DESFire(com.dk.bleNfc.DeviceManager.DeviceManager.this, uidBytes, atrBytes);
                         }
                         else if (cardType == CARD_TYPE_ISO4443_B){
                             uidBytes = new byte[4];
                             atrBytes = new byte[rcvBytes.length - 1];
                             System.arraycopy(rcvBytes, 1, atrBytes, 0, rcvBytes.length - 1);
-                            iso14443bCard = new Iso14443bCard(DeviceManager.this, uidBytes, atrBytes);
+                            iso14443bCard = new Iso14443bCard(com.dk.bleNfc.DeviceManager.DeviceManager.this, uidBytes, atrBytes);
                         }
                         else if (cardType == CARD_TYPE_FELICA) {
                             uidBytes = new byte[4];
                             atrBytes = new byte[rcvBytes.length - 1];
                             System.arraycopy(rcvBytes, 1, atrBytes, 0, rcvBytes.length - 1);
-                            feliCa = new FeliCa(DeviceManager.this, uidBytes, atrBytes);
+                            feliCa = new FeliCa(com.dk.bleNfc.DeviceManager.DeviceManager.this, uidBytes, atrBytes);
                         }
                         else {
                             uidBytes = null;

@@ -68,7 +68,7 @@ public class Card {
      * @throws CardNoResponseException
      *                  操作无响应时会抛出异常
      */
-    public boolean close() throws CardNoResponseException{
+    public boolean close() throws CardNoResponseException {
         final byte[][] returnBytes = new byte[1][1];
         final boolean[] isCmdRunSucFlag = {false};
 

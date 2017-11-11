@@ -1,8 +1,6 @@
 package com.dk.bleNfc.DeviceManager;
 
 import android.content.Context;
-import android.os.Build;
-import android.support.annotation.RequiresApi;
 
 import com.dk.bleNfc.Exception.DeviceNoResponseException;
 
@@ -13,7 +11,7 @@ import java.util.concurrent.TimeUnit;
  * Created by Administrator on 2017/5/15.
  */
 
-public class BleNfcDevice extends DeviceManager {
+public class BleNfcDevice extends com.dk.bleNfc.DeviceManager.DeviceManager {
     final static int DEVICE_NO_RESPONSE_TIME = 500;
 
     public BleNfcDevice(Context context) {
@@ -24,7 +22,6 @@ public class BleNfcDevice extends DeviceManager {
      * 获取设备名称
      * @return         设备名称
      */
-    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
     public String getDeviceName() {
         return bleManager.mBluetoothGatt.getDevice().getName();
     }
@@ -49,7 +46,7 @@ public class BleNfcDevice extends DeviceManager {
 
         final Semaphore semaphore = new Semaphore(0);
 
-        requestBatteryVoltageDevice(new DeviceManager.onReceiveBatteryVoltageDeviceListener() {
+        requestBatteryVoltageDevice(new com.dk.bleNfc.DeviceManager.DeviceManager.onReceiveBatteryVoltageDeviceListener() {
             @Override
             public void onReceiveBatteryVoltageDevice(double voltage) {
                 returnVoltage[0] = voltage;

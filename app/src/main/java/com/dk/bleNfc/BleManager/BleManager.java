@@ -11,8 +11,6 @@ import android.bluetooth.BluetoothProfile;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
-import android.support.annotation.RequiresApi;
 import android.util.Log;
 
 import com.dk.bleNfc.Exception.DeviceNoResponseException;
@@ -25,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by lochy on 15/10/7.
  */
-@RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
 public class BleManager {
     private final static String TAG = "BleManager";
     private Context mContext;
@@ -90,7 +87,6 @@ public class BleManager {
         this.monBleReadListener = l;
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
     public boolean connect(String mDeviceAddress, onBleConnectListener l) {
         if (mBAdapter == null || mDeviceAddress == null) {
             return false;

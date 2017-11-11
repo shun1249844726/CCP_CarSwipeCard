@@ -444,9 +444,11 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
             if ((bleNfcDevice.isConnection() == BleManager.STATE_CONNECTED)) {
                 bleNfcDevice.requestDisConnectDevice();
-            } else {
-                searchNearestBleDevice();
+                System.out.println("BLE:手动断开");
+                return;
             }
+            searchNearestBleDevice();
+
         }
     };
 
@@ -601,7 +603,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 });
             }
         }
-        if (MqttV3Service.isConnected() ){
+        if (MqttV3Service.isConnected()) {
             AppVersionEntity versionEntity = new AppVersionEntity();   //发送APPversion信息。
             versionEntity.setCmd_type("app_version");
 
@@ -716,8 +718,10 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
             if ((scanRecord != null) && (StringTool.byteHexToSting(scanRecord).contains("017f5450")) && isLocalMac(device.getAddress())) {  //从广播数据中过滤掉其它蓝牙设备
                 msgBuffer.append("搜到设备：").append(device.getName()).append(" 信号强度：").append(rssi).append("\r\n");
+                System.out.println("BLE:"+"搜到设备："+device.getName() + "  rssi:"+rssi  + "   last rssi:"  +lastRssi);
                 handler.sendEmptyMessage(0);
                 if (mNearestBle != null) {
+                    System.out.println("BLE:"+ "mNearestBle != null");
                     if (rssi > lastRssi) {
                         mNearestBleLock.lock();
                         try {
@@ -727,6 +731,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                         }
                     }
                 } else {
+                    System.out.println("BLE:"+ "mNearestBle == null");
+
                     mNearestBleLock.lock();
                     try {
                         mNearestBle = device;
@@ -790,11 +796,14 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                                     mScanner.stopScan();
                                     msgBuffer.delete(0, msgBuffer.length());
                                     msgBuffer.append("正在连接设备...");
+                                    System.out.println("BLE:"+"正在连接设备...");
                                     handler.sendEmptyMessage(0);
                                     bleNfcDevice.requestConnectBleDevice(mNearestBle.getAddress());
                                 } else {
                                     msgBuffer.delete(0, msgBuffer.length());
                                     msgBuffer.append("未找到设备！");
+                                    System.out.println("BLE:"+"未找到设备！...");
+
                                     handler.sendEmptyMessage(0);
                                 }
                             } finally {
@@ -809,7 +818,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         }
     }
 
-    //设备操作类回调
+    //设备操作类回调deviceManagerCallback
     private DeviceManagerCallback deviceManagerCallback = new DeviceManagerCallback() {
         @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
         @Override
@@ -1670,14 +1679,14 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 myLatLng = new LatLng(amapLocation.getLatitude(), amapLocation.getLongitude());
 
                 showLocationStatus(13);
-                System.out.println("定位："+"成功");
+                System.out.println("定位：" + "成功");
 
 
             } else {
                 String errText = "定位失败," + amapLocation.getErrorCode() + ": "
                         + amapLocation.getErrorInfo();
                 Log.e("AmapErr", errText);
-                System.out.println("定位："+"失败");
+                System.out.println("定位：" + "失败");
 
                 showLocationStatus(14);
 
@@ -1686,17 +1695,18 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         }
     }
 
-    public void showLocationStatus(int what){
-        if (what == 13){
+    public void showLocationStatus(int what) {
+        if (what == 13) {
             Logger.d("check location no ");
             mImgGpsStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_gps_location));
             mTvGpsStatus.setText("定位成功！");
-        }else if (what == 14){
+        } else if (what == 14) {
             Logger.d("check location ok");
             mImgGpsStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_gps_location_no));
             mTvGpsStatus.setText("定位失败！");
         }
     }
+
     @Override
     public void activate(OnLocationChangedListener listener) {
         mListener = listener;
@@ -1839,6 +1849,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                     Toast.makeText(mContext, "断开连接", Toast.LENGTH_SHORT).show();
                     mImgNetStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_net_disconn));
                     mTvNetStatus.setText("网络断开\n请按返回键");
+
                     MqttV3Service.startReconnect(myHandler);
                 }
             }
@@ -1854,6 +1865,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
 
         String localmac = sharedPreferences.getString("MAC", "");
+        System.out.println("local："+localmac  + "  mac2: "+mac);
+
         if (localmac.equals("")) {
             return true;
         }

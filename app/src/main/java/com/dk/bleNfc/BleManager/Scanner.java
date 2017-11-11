@@ -25,7 +25,7 @@ public class Scanner {
     public onReceiveScannerListener mOnReceiveScannerListener;
 
     private Context mContext;
-    private ScannerCallback mScannerCallback = null;
+    private com.dk.bleNfc.BleManager.ScannerCallback mScannerCallback = null;
 
     public interface onReceiveScannerListener{
         void onReceiveScanDevice(final BluetoothDevice device, final int rssi, final byte[] scanRecord);
@@ -35,7 +35,7 @@ public class Scanner {
         mOnReceiveScannerListener = listener;
     }
 
-    public Scanner(Context context, ScannerCallback callback) {
+    public Scanner(Context context, com.dk.bleNfc.BleManager.ScannerCallback callback) {
         mContext = context;
         mScannerCallback = callback;
         initialize();
