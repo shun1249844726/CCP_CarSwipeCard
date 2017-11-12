@@ -44,7 +44,9 @@
 * 使用Toasty 作为toast
 * 解决上传报表的问题。什么时候就上传不了
 
-
+# 11.12
+* 解决OSS token 超时上传文件不了的问题。
+* 重新用paho mqtt 重写了MQTT 他的重连机制。
+* 发布release 1.0.6 版本。
 
 # TODO
-* 如果MQTT再不停断线就改paho

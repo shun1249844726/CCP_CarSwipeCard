@@ -3,22 +3,36 @@ package com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.mqtt;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
-import com.ibm.micro.client.mqttv3.MqttCallback;
-import com.ibm.micro.client.mqttv3.MqttDeliveryToken;
-import com.ibm.micro.client.mqttv3.MqttMessage;
-import com.ibm.micro.client.mqttv3.MqttTopic;
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.MqttCallback;
+import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-public class CallBack implements MqttCallback {
+
+public class CallBack implements MqttCallbackExtended {
 	private String instanceData = "";
 	private Handler handler;
-
 	public CallBack(String instance, Handler handler) {
 		instanceData = instance;
 		this.handler = handler;
 	}
+	@Override
+	public void connectionLost(Throwable cause) {
+		try{
+			Message msg = new Message();
+			msg.what = 3;
+			handler.sendMessage(msg);
 
-	public void messageArrived(MqttTopic topic, MqttMessage message) {
+
+		}catch (Exception e){
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public void messageArrived(String topic, MqttMessage message) throws Exception {
 		try {
 			System.out.println("MQTT:message:"+message.toString());
 			Message msg = Message.obtain();
@@ -33,20 +47,22 @@ public class CallBack implements MqttCallback {
 	}
 
 	@Override
-	public void connectionLost(Throwable throwable) {
-		try{
+	public void deliveryComplete(IMqttDeliveryToken token) {
+
+	}
+	@Override
+	public void connectComplete(boolean reconnect, String serverURI) {
+		if (reconnect) {
+			System.out.println("Reconnected to : " + serverURI);
+			// Because Clean Session is true, we need to re-subscribe
+			MqttV3Service.subscribeToTopic(MqttV3Service.topicList);
+
 			Message msg = new Message();
-			msg.what = 3;
+			msg.what = 1;
+			msg.obj = "strresult";
 			handler.sendMessage(msg);
-
-
-		}catch (Exception e){
-			e.printStackTrace();
+		} else {
+			System.out.println("Connected to: " + serverURI);
 		}
 	}
-
-	public void deliveryComplete(MqttDeliveryToken token) {
-
-	}
-
 }

@@ -15,8 +15,8 @@ android {
         applicationId "com.lexinsmart.xushun.ccpcarswipecard"
         minSdkVersion 18
         targetSdkVersion 25
-        versionCode 5
-        versionName "1.0.5"
+        versionCode 6
+        versionName "1.0.6"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -61,5 +61,8 @@ dependencies {
     compile 'com.aliyun.dpa:oss-android-sdk:2.4.4'
     compile 'com.squareup.okhttp3:okhttp:3.4.1'
     compile 'com.squareup.okio:okio:1.9.0'
+
+    compile 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.1.0'
+    compile 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
 
 }

@@ -109,8 +109,6 @@ public class SplashActivity extends AppCompatActivity {
 
         }
         staffInfoHelper.close();
-
-
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {

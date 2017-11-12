@@ -10,7 +10,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
-import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.SoundPool;
@@ -78,26 +77,21 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.ibm.micro.client.mqttv3.MqttException;
-import com.ibm.micro.client.mqttv3.MqttSecurityException;
 import com.lexinsmart.xushun.ccpcarswipecard.R;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.CheckPermissionsActivity;
-import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.OssTestActivity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.StaffListActivity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.AckRequireOk;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.AppVersionEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.EverySwipLogEntity;
-import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.GetInfo;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.InfoModel;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.RefreshTimeEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.RequireInfoEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.StsModel;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.SwipCardLog;
-import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.UserInfo;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db.EverySwipLogHelper;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db.RealmHelper;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db.StaffInfoHelper;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.mqtt.MqttV3Service;
-import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.oss.MultipartUploadSamples;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.oss.ProgressCallback;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.oss.PutObjectSamples;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.oss.StsTokenSamples;
@@ -117,10 +111,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Random;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -139,7 +130,6 @@ import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.VE
 import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.VERSIONNAME;
 import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.title0;
 import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant.title1;
-import static com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.StringUtils.getImeIlast5;
 
 /**
  * Created by xushun on 2017/10/25.
@@ -260,19 +250,19 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()  //OSS相关
-                .detectDiskReads()
-                .detectDiskWrites()
-                .detectNetwork()   // or .detectAll() for all detectable problems
-                .penaltyLog()
-                .build());
-
-        StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
-                .detectLeakedSqlLiteObjects()
-                .detectLeakedClosableObjects()
-                .penaltyLog()
-                .penaltyDeath()
-                .build());
+//        StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()  //OSS相关
+//                .detectDiskReads()
+//                .detectDiskWrites()
+//                .detectNetwork()   // or .detectAll() for all detectable problems
+//                .penaltyLog()
+//                .build());
+//
+//        StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
+//                .detectLeakedSqlLiteObjects()
+//                .detectLeakedClosableObjects()
+//                .penaltyLog()
+//                .penaltyDeath()
+//                .build());
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);   //应用运行时，保持屏幕高亮，不锁屏
@@ -325,17 +315,17 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         topicList.add("ccp/app_version/" + IMEI);
 //        Logger.d("topic:" + topic);
 
-        if (MqttV3Service.client == null) {
+        if (MqttV3Service.mqttAndroidClient == null) {
             new Thread(new MqttProcThread()).start();//如果没有 则连接
             System.out.println("MQTT:创建MQTT连接");
         } else if (!MqttV3Service.isConnected()) {
             try {
-                MqttV3Service.client.connect();
-                System.out.println("MQTT:MQTT连接");
-
-            } catch (MqttException e) {
+                MqttV3Service.mqttAndroidClient.connect();
+            } catch (org.eclipse.paho.client.mqttv3.MqttException e) {
                 e.printStackTrace();
             }
+            System.out.println("MQTT:MQTT连接");
+
         }
 
         mLlBluetoothStatus.setOnClickListener(llBluetoothClickListener);
@@ -610,7 +600,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 ExcelUtils.writeObjListToExcel(0, logsArray, fileName, this);   //写入sheet0
             }
 
-            
+
             initStsData();  //初始化 OSS Sts   获取TOKEN 等信息。
 
         }
@@ -1768,14 +1758,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         @Override
         public void run() {
             Message msg = new Message();
-            boolean ret = MqttV3Service.connectionMqttServer(myHandler, Constant.MQTT_ADDRESS, Constant.MQTT_PORT, clientid, topicList);
-            if (ret) {
-                msg.what = 1;
-            } else {
-                msg.what = 0;
-            }
-            msg.obj = "strresult";
-            myHandler.sendMessage(msg);
+            MqttV3Service.connectionMqttServer(mContext,myHandler, Constant.MQTT_ADDRESS, Constant.MQTT_PORT, clientid, topicList);
         }
     }
 
@@ -1791,7 +1774,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 mImgNetStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_net_ok));
 
             } else if (msg.what == 0) {
-//                Toast.makeText(mContext, "连接失败", Toast.LENGTH_SHORT).show();
                 Toasty.error(MainActivity.this, "网络连接失败!", Toast.LENGTH_SHORT, true).show();
 
                 mTvNetStatus.setText("网络连接失败\n点击重连");
@@ -1872,21 +1854,16 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                     }
                 }
             } else if (msg.what == 3) {
-                if (!MqttV3Service.client.isConnected()) {
+                if (!MqttV3Service.mqttAndroidClient.isConnected()) {
                     System.out.println("MQTT:连接丢失");
-//                    Toast.makeText(mContext, "断开连接", Toast.LENGTH_SHORT).show();
                     Toasty.error(MainActivity.this, "断开连接!", Toast.LENGTH_SHORT, true).show();
 
                     mImgNetStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_net_disconn));
                     mTvNetStatus.setText("网络断开\n请按返回键");
-
-                    MqttV3Service.startReconnect(myHandler);
                 }
             }
         }
     };
-    private ScheduledExecutorService mScheduledExecutorService;
-
 
     public boolean isLocalMac(String mac) {
         boolean islocal = false;

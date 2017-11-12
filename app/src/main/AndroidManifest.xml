@@ -124,6 +124,10 @@
         <service
             android:name=".lexinsmart.update.DownloadService"
             android:exported="true"/>
+
+        <!-- Mqtt Service -->
+        <service android:name="org.eclipse.paho.android.service.MqttService">
+        </service>
     </application>
 
 </manifest>
