@@ -380,12 +380,10 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             switch (msg.what) {
                 case UPLOAD_SUC:
                     Toasty.success(MainActivity.this, "上传文件成功！!", Toast.LENGTH_SHORT, true).show();
-
                     handled = true;
                     break;
                 case FAIL:
                     Toasty.error(MainActivity.this, "上传文件失败！!", Toast.LENGTH_SHORT, true).show();
-
                     handled = true;
                     break;
                 case STS_TOKEN_SUC:
@@ -394,24 +392,26 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
                     StsModel response = (StsModel) msg.obj;
                     setOssClient(response.Credentials.AccessKeyId, response.Credentials.AccessKeySecret, response.Credentials.SecurityToken);
-                    System.out.println("-------StsToken.Expiration-------\n" + response.Credentials.Expiration);
-                    System.out.println("-------StsToken.AccessKeyId-------\n" + response.Credentials.AccessKeyId);
-                    System.out.println("-------StsToken.SecretKeyId-------\n" + response.Credentials.AccessKeySecret);
-                    System.out.println("-------StsToken.SecurityToken-------\n" + response.Credentials.SecurityToken);
+                    System.out.println("STS:-------StsToken.Expiration-------" + response.Credentials.Expiration);
+                    System.out.println("STS:-------StsToken.AccessKeyId-------" + response.Credentials.AccessKeyId);
+                    System.out.println("STS:-------StsToken.SecretKeyId-------" + response.Credentials.AccessKeySecret);
+                    System.out.println("STS:-------StsToken.SecurityToken-------" + response.Credentials.SecurityToken);
                     handled = true;
 
 
+                    System.out.println("STS:获取认证成功："+sendToOss );
                     if (sendToOss) {
                         Date mDate = new Date();
                         String dateString = DateUtils.dateToString(mDate, "MEDIUM");
                         uploadObject = "logs/" + dateString + "/" + IMEI + "/" + DateUtils.getTimeShort() + ".xls";
-                        initSamples();
+                        System.out.println("STS:checkNotNull(putObjectSamples):"+checkNotNull(putObjectSamples));
 
                         if (checkNotNull(putObjectSamples)) {
                             putObjectSamples.asyncPutObjectFromLocalFile(new ProgressCallback<PutObjectRequest, PutObjectResult>() {
                                 @Override
                                 public void onProgress(PutObjectRequest request, long currentSize, long totalSize) {
 
+                                    System.out.println("STS:onprogress"+100*currentSize/totalSize);
                                     Message msg = Message.obtain();
                                     msg.what = UPLOAD_PROGRESS;
                                     Bundle data = new Bundle();
@@ -424,26 +424,31 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
                                 @Override
                                 public void onSuccess(PutObjectRequest request, PutObjectResult result) {
+                                    System.out.println("STS:onsuccess");
                                     stsHandler.sendEmptyMessage(UPLOAD_SUC);
                                 }
 
                                 @Override
                                 public void onFailure(PutObjectRequest request, ClientException clientException, ServiceException serviceException) {
+                                    System.out.println("STS:onFailure");
+                                    clientException.printStackTrace();
+                                    serviceException.printStackTrace();
                                     stsHandler.sendEmptyMessage(UPLOAD_Fail);
 
                                 }
                             });
-                            sendToOss = false;
                         }
+                        sendToOss = false;
+
                     }
                     break;
             }
             return handled;
         }
     });
-    private OSSCredentialProvider mCredentialProvider;
 
     public void setOssClient(String ak, String sk, String token) {
+        OSSCredentialProvider mCredentialProvider = null;
         if (mCredentialProvider == null || oss == null) {
             mCredentialProvider = new OSSStsTokenCredentialProvider(ak, sk, token);
             OSSCredentialProvider credentialProvider = new OSSStsTokenCredentialProvider(ak, sk, token);
@@ -547,7 +552,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
     @OnClick(R.id.btn_submit)
     void submit(View view) {
-        initStsData();  //初始化 OSS Sts   获取TOKEN 等信息。
 
 
         File file = new File(getExternalFilesDir(null) + "/Record");
@@ -557,23 +561,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         String fileName = getExternalFilesDir(null) + "/Record/刷卡详细记录.xls";
 
         System.out.println("结束行程");
-        EverySwipLogHelper everySwipLogHelper = new EverySwipLogHelper(mContext);//获取所有列表，转成EXcel 发给服务器
-        RealmResults<EverySwipLogEntity> logs = everySwipLogHelper.getAllLog();
-        ArrayList<ArrayList<String>> logsArray = new ArrayList<>();
-        if (logs != null) {
-            for (int i = 0; i < logs.size(); i++) {   //将从数据库获取的数据，转成list   写入Excel
-                EverySwipLogEntity everySwipLogEntity = logs.get(i);
 
-                ArrayList<String> logbeanList = new ArrayList<String>();
-                logbeanList.add(everySwipLogEntity.getCardnumber());
-                logbeanList.add(everySwipLogEntity.getSwipcartime());
-                logbeanList.add(everySwipLogEntity.getLatitude());
-                logbeanList.add(everySwipLogEntity.getLongitude());
-
-                logsArray.add(logbeanList);
-            }
-            ExcelUtils.writeObjListToExcel(0, logsArray, fileName, this);   //写入sheet0
-        }
 
 
         RealmHelper realmHelper = new RealmHelper(mContext);//获取
@@ -602,6 +590,29 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             ExcelUtils.writeObjListToExcel(1, incarlogsArray, fileName, this);
 
             sendToOss = true;
+
+
+            EverySwipLogHelper everySwipLogHelper = new EverySwipLogHelper(mContext);//获取所有列表，转成EXcel 发给服务器
+            RealmResults<EverySwipLogEntity> logs = everySwipLogHelper.getAllLog();
+            ArrayList<ArrayList<String>> logsArray = new ArrayList<>();
+            if (logs != null) {
+                for (int i = 0; i < logs.size(); i++) {   //将从数据库获取的数据，转成list   写入Excel
+                    EverySwipLogEntity everySwipLogEntity = logs.get(i);
+
+                    ArrayList<String> logbeanList = new ArrayList<String>();
+                    logbeanList.add(everySwipLogEntity.getCardnumber());
+                    logbeanList.add(everySwipLogEntity.getSwipcartime());
+                    logbeanList.add(everySwipLogEntity.getLatitude());
+                    logbeanList.add(everySwipLogEntity.getLongitude());
+
+                    logsArray.add(logbeanList);
+                }
+                ExcelUtils.writeObjListToExcel(0, logsArray, fileName, this);   //写入sheet0
+            }
+
+            
+            initStsData();  //初始化 OSS Sts   获取TOKEN 等信息。
+
         }
 
         realmHelper.clearAll();
@@ -628,8 +639,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             Logger.json(s);
             MqttV3Service.publishMsg(s, 0, 1);
         }
-
-
 
     }
 
