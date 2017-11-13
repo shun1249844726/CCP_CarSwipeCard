@@ -391,9 +391,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
                     System.out.println("STS:获取认证成功："+sendToOss );
                     if (sendToOss) {
-                        Date mDate = new Date();
-                        String dateString = DateUtils.dateToString(mDate, "MEDIUM");
-                        uploadObject = "logs/" + dateString + "/" + IMEI + "/" + DateUtils.getTimeShort() + ".xls";
+
                         System.out.println("STS:checkNotNull(putObjectSamples):"+checkNotNull(putObjectSamples));
 
                         if (checkNotNull(putObjectSamples)) {
@@ -458,6 +456,10 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     }
 
     private void initSamples() {//初始化OSS的上传的东西
+        Date mDate = new Date();
+        String dateString = DateUtils.dateToString(mDate, "MEDIUM");
+        uploadObject = "logs/" + dateString + "/" + IMEI + "/" + DateUtils.getTimeShort() + ".xls";
+
         putObjectSamples = new PutObjectSamples(oss, testBucket, uploadObject, uploadFilePath);
     }
 
