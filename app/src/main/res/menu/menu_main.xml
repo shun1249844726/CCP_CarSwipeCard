@@ -13,7 +13,7 @@
         android:orderInCategory="100"
         android:icon="@mipmap/ic_unbind"
         android:title="取消蓝牙绑定"
-        app:showAsAction="always"/>
+        app:showAsAction="never"/>
     <!--<item-->
         <!--android:id="@+id/action_settings"-->
         <!--android:orderInCategory="100"-->

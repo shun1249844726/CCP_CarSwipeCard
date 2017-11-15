@@ -1,10 +1,13 @@
 package com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils;
 
+import android.text.TextUtils;
+
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -75,7 +78,19 @@ public class DateUtils {
 		return tsStr;
 	}
 
+	public static String getStringDate(Date date){
+		String str = "";
+		DateFormat format = new SimpleDateFormat("yyyy-MM/dd");
+		str = format.format(date);
+		return str;
+	}
+	public static String getStringDate_2(Date date){
+		String str = "";
+		DateFormat format = new SimpleDateFormat("MM-dd");
+		str = format.format(date);
+		return str;
 
+	}
 	public static String dateToString(Date date, String type) {
 		String str = null;
 		DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
@@ -110,9 +125,27 @@ public class DateUtils {
 	}
 
 	public static String getTimeShort() {
-		SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
+		SimpleDateFormat formatter = new SimpleDateFormat("HH-mm-ss");
 		Date currentTime = new Date();
 		String dateString = formatter.format(currentTime);
 		return dateString;
+	}
+
+
+	private static SimpleDateFormat sdf = null;
+
+	public  static String formatUTC(long l, String strPattern) {
+		if (TextUtils.isEmpty(strPattern)) {
+			strPattern = "yyyy-MM-dd HH:mm:ss";
+		}
+		if (sdf == null) {
+			try {
+				sdf = new SimpleDateFormat(strPattern, Locale.CHINA);
+			} catch (Throwable e) {
+			}
+		} else {
+			sdf.applyPattern(strPattern);
+		}
+		return sdf == null ? "NULL" : sdf.format(l);
 	}
 }

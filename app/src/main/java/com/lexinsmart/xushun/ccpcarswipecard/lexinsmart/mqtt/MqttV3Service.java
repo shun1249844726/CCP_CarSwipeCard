@@ -40,7 +40,7 @@ public class MqttV3Service {
         mqttAndroidClient.setCallback(callBack);
         mqttConnectOptions = new MqttConnectOptions();
         mqttConnectOptions.setAutomaticReconnect(true);
-        mqttConnectOptions.setCleanSession(false);
+        mqttConnectOptions.setCleanSession(true);
         try {
             mqttAndroidClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
 

@@ -19,7 +19,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Process;
-import android.os.StrictMode;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.ActionBar;
@@ -53,6 +52,7 @@ import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
 import com.amap.api.location.AMapLocationListener;
+import com.amap.api.location.AMapLocationQualityReport;
 import com.amap.api.maps.AMap;
 import com.amap.api.maps.CameraUpdateFactory;
 import com.amap.api.maps.LocationSource;
@@ -76,7 +76,6 @@ import com.dk.bleNfc.Tool.StringTool;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.ibm.micro.client.mqttv3.MqttException;
 import com.lexinsmart.xushun.ccpcarswipecard.R;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.CheckPermissionsActivity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.StaffListActivity;
@@ -106,12 +105,13 @@ import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.UiUtils;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.toasty.Toasty;
 import com.orhanobut.logger.Logger;
 
+import org.eclipse.paho.client.mqttv3.MqttException;
+
 import java.io.File;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -183,6 +183,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     LinearLayout mLlMainSetting;
     @BindView(R.id.ll_info)
     LinearLayout mLlInfo;
+    @BindView(R.id.tv_location_result)
+    TextView mTvLocationResult;
     private BleNfcDevice bleNfcDevice;
     private Scanner mScanner;
     private ProgressDialog readWriteDialog = null;
@@ -263,13 +265,15 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 //                .penaltyLog()
 //                .penaltyDeath()
 //                .build());
+        System.out.println("life:"+"onCreate");
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);   //应用运行时，保持屏幕高亮，不锁屏
 
 
         Date mDate = new Date();   //设置上传到OSS的文件的目录结构   logs/日期/IMEI/时间
-        String dateString = DateUtils.dateToString(mDate, "MEDIUM");
+       // String dateString = DateUtils.dateToString(mDate, "SHORT");
+        String dateString = DateUtils.getStringDate(mDate);
         uploadObject = "logs/" + dateString + "/" + IMEI + "/" + DateUtils.getTimeShort() + ".xls";
 
         mContext = this;
@@ -321,7 +325,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         } else if (!MqttV3Service.isConnected()) {
             try {
                 MqttV3Service.mqttAndroidClient.connect();
-            } catch (org.eclipse.paho.client.mqttv3.MqttException e) {
+            } catch (MqttException e) {
                 e.printStackTrace();
             }
             System.out.println("MQTT:MQTT连接");
@@ -346,7 +350,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         soundPoolMap.put(KEY_SOUND_A2, mSoundPool.load(this, R.raw.ackok, 1));
         soundPoolMap.put(KEY_SOUND_A3, mSoundPool.load(this, R.raw.ackfail, 1));
         soundPoolMap.put(KEY_SOUND_A4, mSoundPool.load(this, R.raw.donotswip, 1));
-
 
 
     }
@@ -389,17 +392,17 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                     handled = true;
 
 
-                    System.out.println("STS:获取认证成功："+sendToOss );
+                    System.out.println("STS:获取认证成功：" + sendToOss);
                     if (sendToOss) {
 
-                        System.out.println("STS:checkNotNull(putObjectSamples):"+checkNotNull(putObjectSamples));
+                        System.out.println("STS:checkNotNull(putObjectSamples):" + checkNotNull(putObjectSamples));
 
                         if (checkNotNull(putObjectSamples)) {
                             putObjectSamples.asyncPutObjectFromLocalFile(new ProgressCallback<PutObjectRequest, PutObjectResult>() {
                                 @Override
                                 public void onProgress(PutObjectRequest request, long currentSize, long totalSize) {
 
-                                    System.out.println("STS:onprogress"+100*currentSize/totalSize);
+                                    System.out.println("STS:onprogress" + 100 * currentSize / totalSize);
                                     Message msg = Message.obtain();
                                     msg.what = UPLOAD_PROGRESS;
                                     Bundle data = new Bundle();
@@ -457,8 +460,10 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
     private void initSamples() {//初始化OSS的上传的东西
         Date mDate = new Date();
-        String dateString = DateUtils.dateToString(mDate, "MEDIUM");
-        uploadObject = "logs/" + dateString + "/" + IMEI + "/" + DateUtils.getTimeShort() + ".xls";
+//        String dateString = DateUtils.dateToString(mDate, "SHORT");
+        String dateString = DateUtils.getStringDate(mDate);
+
+        uploadObject = "logs/" + dateString + "/" + IMEI + "/" + StringUtils.getImeIlast5(IMEI)+"_"+DateUtils.getStringDate_2(mDate)+"_"+DateUtils.getTimeShort() + ".xls";
 
         putObjectSamples = new PutObjectSamples(oss, testBucket, uploadObject, uploadFilePath);
     }
@@ -553,7 +558,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         String fileName = getExternalFilesDir(null) + "/Record/刷卡详细记录.xls";
 
         System.out.println("结束行程");
-
 
 
         RealmHelper realmHelper = new RealmHelper(mContext);//获取
@@ -684,11 +688,13 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         if (id == R.id.action_map_showHide) {
             if (mMapView.getVisibility() == View.GONE) {
                 mMapView.setVisibility(View.VISIBLE);
+                mTvLocationResult.setVisibility(View.VISIBLE);
                 mCardview1.setVisibility(View.GONE);
                 mCardview2.setVisibility(View.GONE);
                 mBtnSubmit.setVisibility(View.GONE);
 
             } else if (mMapView.getVisibility() == View.VISIBLE) {
+                mTvLocationResult.setVisibility(View.GONE);
                 mMapView.setVisibility(View.GONE);
                 mCardview1.setVisibility(View.VISIBLE);
                 mCardview2.setVisibility(View.VISIBLE);
@@ -735,10 +741,10 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
             if ((scanRecord != null) && (StringTool.byteHexToSting(scanRecord).contains("017f5450")) && isLocalMac(device.getAddress())) {  //从广播数据中过滤掉其它蓝牙设备
                 msgBuffer.append("搜到设备：").append(device.getName()).append(" 信号强度：").append(rssi).append("\r\n");
-                System.out.println("BLE:"+"搜到设备："+device.getName() + "  rssi:"+rssi  + "   last rssi:"  +lastRssi);
+                System.out.println("BLE:" + "搜到设备：" + device.getName() + "  rssi:" + rssi + "   last rssi:" + lastRssi);
                 handler.sendEmptyMessage(0);
                 if (mNearestBle != null) {
-                    System.out.println("BLE:"+ "mNearestBle != null");
+                    System.out.println("BLE:" + "mNearestBle != null");
                     if (rssi > lastRssi) {
                         mNearestBleLock.lock();
                         try {
@@ -748,7 +754,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                         }
                     }
                 } else {
-                    System.out.println("BLE:"+ "mNearestBle == null");
+                    System.out.println("BLE:" + "mNearestBle == null");
 
                     mNearestBleLock.lock();
                     try {
@@ -813,13 +819,13 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                                     mScanner.stopScan();
                                     msgBuffer.delete(0, msgBuffer.length());
                                     msgBuffer.append("正在连接设备...");
-                                    System.out.println("BLE:"+"正在连接设备...");
+                                    System.out.println("BLE:" + "正在连接设备...");
                                     handler.sendEmptyMessage(0);
                                     bleNfcDevice.requestConnectBleDevice(mNearestBle.getAddress());
                                 } else {
                                     msgBuffer.delete(0, msgBuffer.length());
                                     msgBuffer.append("未找到设备！");
-                                    System.out.println("BLE:"+"未找到设备！...");
+                                    System.out.println("BLE:" + "未找到设备！...");
 
                                     handler.sendEmptyMessage(0);
                                 }
@@ -1060,7 +1066,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                     case 8:
 //                        toolbar.getMenu().getItem(0).setIcon(R.mipmap.ic_bluetooth_no);
                         mImgBluetoothStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_bluetooth_no));
-                        mTvBluetooth.setText("设备未连接\n点击重连");
+                        mTvBluetooth.setText("设备未连接\n点击返回重连");
                         break;
                     case 9:
 //                        toolbar.getMenu().getItem(0).setIcon(R.mipmap.ic_bluetooth);
@@ -1311,172 +1317,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         MqttV3Service.publishMsg(s, Qos, 0);
     }
 
-    //        /**
-//     * 从网络中获取到用户信息。
-//     *
-//     * @param realmHelper
-//     * @param cardNumberString
-//     * @param mHandler
-//     * @param swipcount
-//     * @param getUpOrOff
-//     */
-//    private void getUserInfo(RealmHelper realmHelper, String cardNumberString, Handler mHandler, int swipcount, boolean getUpOrOff) {
-//
-//        int max = 20;
-//        int min = 10;
-//        Random random = new Random();
-//        int s = random.nextInt(max) % (max - min + 1) + min;
-//
-//        UserInfo userInfo = new UserInfo();
-//        userInfo.setSuccess("0");
-//        userInfo.setName("xushun" + s);
-//        userInfo.setStaffNum("C1111" + s);
-//        userInfo.setCardNum(cardNumberString);
-//
-//        //通知更新刷卡人信息。
-//        Message message = Message.obtain(mHandler);
-//        message.what = 10;
-//        //通知界面更新刷卡人信息
-//        Bundle b = new Bundle();
-//        b.putString("name", userInfo.getName());
-//        b.putString("staffnum", userInfo.getStaffNum());
-//        message.setData(b);
-//        mHandler.sendMessage(message);
-//
-//
-//        SwipCardLog swipCardLog = new SwipCardLog();
-//        swipCardLog.setName(userInfo.getName());
-//        swipCardLog.setCardnum(userInfo.getCardNum());
-//        swipCardLog.setStaffnum(userInfo.getStaffNum());
-//        swipCardLog.setGetOnTime(new Timestamp(System.currentTimeMillis()).toString());
-//        swipCardLog.setGetOnFlag(true);
-//        swipCardLog.setSwipCount(swipcount);
-//        swipCardLog.setGetUpOrOff(getUpOrOff);
-//
-//        realmHelper.addSwipLog(swipCardLog);
-//        realmHelper.close();
-//
-//    }
-//
-//    /**
-//     * 请求基础信息，姓名和工号
-//     *
-//     * @param cardNumberString
-//     */
-//    private void requestInfo(String cardNumberString, Handler mHandler) {
-//
-//
-//        int max = 20;
-//        int min = 10;
-//        Random random = new Random();
-//        int s = random.nextInt(max) % (max - min + 1) + min;
-//
-//        GetInfo getInfoResult = new GetInfo();
-//        getInfoResult.setSuccess("0");
-//        getInfoResult.setName("张" + s);
-//        getInfoResult.setCardNum(cardNumberString);
-//        getInfoResult.setStaffNum("C10" + s);
-//
-//        String checkintime = new Timestamp(System.currentTimeMillis() - 1000 * 60 * 60 * 19).toString();   // intime
-//        String checkouttime = new Timestamp(System.currentTimeMillis() - 1000 * 60 * 60 * 9).toString(); // outtime
-//        getInfoResult.setCheckouttime(checkouttime);
-//        getInfoResult.setCheckintime(checkintime);//模拟 九个小时
-//
-//        //通知更新刷卡人信息。
-//        Message message = Message.obtain(mHandler);
-//        message.what = 10;
-//        //通知界面更新刷卡人信息
-//        Bundle b = new Bundle();
-//        b.putString("name", getInfoResult.getName());
-//        b.putString("staffnum", getInfoResult.getStaffNum());
-//        message.setData(b);
-//        mHandler.sendMessage(message);
-//
-//
-//        String info = "";
-//        if (getInfoResult.getSuccess().equals("0")) {//返回结果成功
-//            Timestamp checkouttimeDate = DateUtils.StringToTimestamp(getInfoResult.getCheckouttime());
-//            Timestamp checkintimeDate = DateUtils.StringToTimestamp(getInfoResult.getCheckintime());
-//            if (checkouttimeDate.getTime() > checkintimeDate.getTime()) {//下班时间>上班时间
-//                if (System.currentTimeMillis() - checkouttimeDate.getTime() > 6 * 60 * 60 * 1000) { //  >6h
-//
-//                    RealmHelper mRealmHelper = new RealmHelper(mContext);
-//
-//                    boolean isInFactory = false; //是否在厂区内 ，根据经纬度判断。
-//                    if (isInFactory) {//在厂区内 ，下班
-//                        if (mRealmHelper.isLogExist(cardNumberString)) { //存在记录
-//                            if (mRealmHelper.qurryLogByCardNum(cardNumberString).isGetUpOrOff()) {//如果是上班  则下车
-//                                info = "在厂区内 下车";
-//                                Logger.d(info);
-//                            } else {//下班  他为啥又刷了
-//
-//                            }
-//                        } else {
-//                            info = "在厂区内，下班坐车";
-//                            Logger.d(info);
-//                        }
-//                    } else {  //在厂区外。
-//                        int count = 0;
-//                        Logger.d(mRealmHelper.getSwipCount(cardNumberString));
-//
-//                        if (mRealmHelper.isLogExist(cardNumberString)) { //信息存在
-//                            count = mRealmHelper.getSwipCount(getInfoResult.getCardNum());//从数据库查询刷卡的次数。
-//                        } else {
-//                            count = 0;//初次添加
-//                        }
-//
-//                        SwipCardLog swipCardLog = new SwipCardLog();
-//                        swipCardLog.setName(getInfoResult.getName());
-//                        swipCardLog.setCardnum(getInfoResult.getCardNum());
-//                        swipCardLog.setStaffnum(getInfoResult.getStaffNum());
-//                        if (count == 0) {//上班，上车，
-//                            info = "厂区外，上班，上车";
-//                            Logger.d(info);
-//
-//                            swipCardLog.setGetOnTime(new Timestamp(System.currentTimeMillis()).toString());
-//                            SwipCardLog oldinfo = mRealmHelper.qurryLogByCardNum(getInfoResult.getCardNum());
-//                            swipCardLog.setGetOffTime(null);
-//                            swipCardLog.setGetOnFlag(true);
-//                            swipCardLog.setSwipCount(1);
-//                            swipCardLog.setGetUpOrOff(true);
-//                            mRealmHelper.addSwipLog(swipCardLog);
-//
-//
-//                        } else {//上班，下车
-//                            info = "厂区外，上班，下车";
-//                            Logger.d(info);
-//
-//                            SwipCardLog oldinfo = mRealmHelper.qurryLogByCardNum(getInfoResult.getCardNum());
-//                            swipCardLog.setGetOnTime(oldinfo.getGetOnTime());
-//                            swipCardLog.setGetOffTime(new Timestamp(System.currentTimeMillis()).toString());
-//                            swipCardLog.setGetOnFlag(false);
-//                            swipCardLog.setSwipCount(2);
-//                            swipCardLog.setGetUpOrOff(true);
-//
-//                            mRealmHelper.updateSwipLog(swipCardLog);
-//                        }
-//                    }
-//                    mRealmHelper.close();
-//
-//                } else if (System.currentTimeMillis() - checkouttimeDate.getTime() < 6 * 60 * 60 * 1000) { // <3h
-//                    info = "下班，上车";
-//                    Logger.d(info);
-//
-//
-//                }
-//            } else {//下班忘刷卡
-//                info = "未打下班卡！";
-//
-//            }
-//            Message msg = new Message();
-//            msg.what = 12;
-//            msg.obj = info;
-//            mHandler.sendMessage(msg);
-//        }
-//
-//        //通知界面更新 实时人数
-//        mHandler.sendEmptyMessage(11);
-//    }
     //开始自动寻卡
     private boolean startAutoSearchCard() throws DeviceNoResponseException {
         //打开自动寻卡，200ms间隔，寻M1/UL卡
@@ -1612,6 +1452,9 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             mBleNfcDeviceService.setDeviceManagerCallback(deviceManagerCallback);
         }
         mMapView.onResume();
+
+        System.out.println("life:"+"onResume");
+
     }
 
     @Override
@@ -1627,6 +1470,16 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         mSmdtManager = new SmdtManager(getApplicationContext());
         mSmdtManager.smdtSetStatusBar(getApplicationContext(), false);
         UiUtils.hideNavigate(this);
+
+        System.out.println("life:"+"onStart");
+
+    }
+    @Override
+    protected  void onRestart() {
+
+        super.onRestart();
+        System.out.println("life:"+"onReStart");
+
     }
 
     @Override
@@ -1634,7 +1487,10 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         super.onPause();
         mMapView.onPause();
 
-        deactivate();
+        //deactivate();
+
+        System.out.println("life:"+"onPause");
+
     }
 
     @Override
@@ -1643,6 +1499,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         mSmdtManager.smdtSetStatusBar(getApplicationContext(), true);
         System.out.println("onstop");
+        System.out.println("life:"+"onStop");
+
     }
 
     @Override
@@ -1656,14 +1514,15 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         unbindService(mServiceConnection);
 
-
         if (null != mlocationClient) {
             mlocationClient.onDestroy();
         }
+        mlocationClient = null;
+
         MqttV3Service.closeMqtt();
         //  MqttV3Service.client = null;
 
-        System.out.println("ondestroy");
+        System.out.println("life:"+"onDestroy");
     }
 
     /**
@@ -1687,31 +1546,102 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     }
 
     @Override
-    public void onLocationChanged(AMapLocation amapLocation) {
-        if (mListener != null && amapLocation != null) {
-            if (amapLocation != null && amapLocation.getErrorCode() == 0) {
-                mListener.onLocationChanged(amapLocation);// 显示系统小蓝点
+    public void onLocationChanged(AMapLocation location) {
+        System.out.println("onLocationChanged:"+location.getLocationType());
+        if (mListener != null && location != null) {
+            if (location.getErrorCode() == 0) {
+                mListener.onLocationChanged(location);// 显示系统小蓝点
 
                 //经纬度：   [词典]	longitude and latitude
-                myLatLng = new LatLng(amapLocation.getLatitude(), amapLocation.getLongitude());
+                myLatLng = new LatLng(location.getLatitude(), location.getLongitude());
 
                 showLocationStatus(13);
                 System.out.println("定位：" + "成功");
 
 
             } else {
-                String errText = "定位失败," + amapLocation.getErrorCode() + ": "
-                        + amapLocation.getErrorInfo();
+                String errText = "定位失败," + location.getErrorCode() + ": "
+                        + location.getErrorInfo();
                 Log.e("AmapErr", errText);
                 System.out.println("定位：" + "失败");
 
                 showLocationStatus(14);
-
-
             }
         }
-    }
 
+        if (null != location) {
+            StringBuffer sb = new StringBuffer();
+            //errCode等于0代表定位成功，其他的为定位失败，具体的可以参照官网定位错误码说明
+            if(location.getErrorCode() == 0){
+                sb.append("定位成功" + "\n");
+                sb.append("定位类型: " + location.getLocationType() + "\n");
+                sb.append("经    度    : " + location.getLongitude() + "\n");
+                sb.append("纬    度    : " + location.getLatitude() + "\n");
+                sb.append("精    度    : " + location.getAccuracy() + "米" + "\n");
+                sb.append("提供者    : " + location.getProvider() + "\n");
+
+                sb.append("速    度    : " + location.getSpeed() + "米/秒" + "\n");
+                sb.append("角    度    : " + location.getBearing() + "\n");
+                // 获取当前提供定位服务的卫星个数
+                sb.append("星    数    : " + location.getSatellites() + "\n");
+                sb.append("国    家    : " + location.getCountry() + "\n");
+                sb.append("省            : " + location.getProvince() + "\n");
+                sb.append("市            : " + location.getCity() + "\n");
+                sb.append("城市编码 : " + location.getCityCode() + "\n");
+                sb.append("区            : " + location.getDistrict() + "\n");
+                sb.append("区域 码   : " + location.getAdCode() + "\n");
+                sb.append("地    址    : " + location.getAddress() + "\n");
+                sb.append("兴趣点    : " + location.getPoiName() + "\n");
+                //定位完成的时间
+                sb.append("定位时间: " + DateUtils.formatUTC(location.getTime(), "yyyy-MM-dd HH:mm:ss") + "\n");
+            } else {
+                //定位失败
+                sb.append("定位失败" + "\n");
+                sb.append("错误码:" + location.getErrorCode() + "\n");
+                sb.append("错误信息:" + location.getErrorInfo() + "\n");
+                sb.append("错误描述:" + location.getLocationDetail() + "\n");
+            }
+            sb.append("***定位质量报告***").append("\n");
+            sb.append("* WIFI开关：").append(location.getLocationQualityReport().isWifiAble() ? "开启":"关闭").append("\n");
+            sb.append("* GPS状态：").append(getGPSStatusString(location.getLocationQualityReport().getGPSStatus())).append("\n");
+            sb.append("* GPS星数：").append(location.getLocationQualityReport().getGPSSatellites()).append("\n");
+            sb.append("****************").append("\n");
+            //定位之后的回调时间
+            sb.append("回调时间: " + DateUtils.formatUTC(System.currentTimeMillis(), "yyyy-MM-dd HH:mm:ss") + "\n");
+
+            //解析定位结果，
+            String result = sb.toString();
+            mTvLocationResult.setText(result);
+        } else {
+            mTvLocationResult.setText("定位失败，loc is null");
+        }
+    }
+    /**
+     * 获取GPS状态的字符串
+     * @param statusCode GPS状态码
+     * @return
+     */
+    private String getGPSStatusString(int statusCode){
+        String str = "";
+        switch (statusCode){
+            case AMapLocationQualityReport.GPS_STATUS_OK:
+                str = "GPS状态正常";
+                break;
+            case AMapLocationQualityReport.GPS_STATUS_NOGPSPROVIDER:
+                str = "手机中没有GPS Provider，无法进行GPS定位";
+                break;
+            case AMapLocationQualityReport.GPS_STATUS_OFF:
+                str = "GPS关闭，建议开启GPS，提高定位质量";
+                break;
+            case AMapLocationQualityReport.GPS_STATUS_MODE_SAVING:
+                str = "选择的定位模式中不包含GPS定位，建议选择包含GPS定位的模式，提高定位质量";
+                break;
+            case AMapLocationQualityReport.GPS_STATUS_NOGPSPERMISSION:
+                str = "没有GPS定位权限，建议开启gps定位权限";
+                break;
+        }
+        return str;
+    }
     public void showLocationStatus(int what) {
         if (what == 13) {
             Logger.d("check location no ");
@@ -1727,6 +1657,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     @Override
     public void activate(OnLocationChangedListener listener) {
         mListener = listener;
+        System.out.println("activate:"+"activate!");
 
         if (mlocationClient == null) {
             mlocationClient = new AMapLocationClient(this);
@@ -1735,9 +1666,16 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             mlocationClient.setLocationListener(this);
             // 设置为高精度定位模式
             mLocationOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Hight_Accuracy);
-            // 只是为了获取当前位置，所以设置为单次定位
             mLocationOption.setOnceLocation(false);
             mLocationOption.setGpsFirst(true);
+            mLocationOption.setSensorEnable(true);
+            mLocationOption.setNeedAddress(true);
+            mLocationOption.setWifiScan(false);
+            mLocationOption.setHttpTimeOut(30000);//可选，设置网络请求超时时间。默认为30秒。在仅设备模式下无效
+            mLocationOption.setInterval(2000);//可选，设置定位间隔。默认为2秒
+            mLocationOption.setLocationCacheEnable(true); //可选，设置是否使用缓存定位，默认为true
+            mLocationOption.setLastLocationLifeCycle(20000);
+
             // 设置定位参数
             mlocationClient.setLocationOption(mLocationOption);
             mlocationClient.startLocation();
@@ -1749,9 +1687,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         mListener = null;
         if (mlocationClient != null) {
             mlocationClient.stopLocation();
-            mlocationClient.onDestroy();
         }
-        mlocationClient = null;
+
     }
 
     public class MqttProcThread implements Runnable {
@@ -1760,7 +1697,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         @Override
         public void run() {
             Message msg = new Message();
-            MqttV3Service.connectionMqttServer(mContext,myHandler, Constant.MQTT_ADDRESS, Constant.MQTT_PORT, clientid, topicList);
+            MqttV3Service.connectionMqttServer(mContext, myHandler, Constant.MQTT_ADDRESS, Constant.MQTT_PORT, clientid, topicList);
         }
     }
 
@@ -1778,7 +1715,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             } else if (msg.what == 0) {
                 Toasty.error(MainActivity.this, "网络连接失败!", Toast.LENGTH_SHORT, true).show();
 
-                mTvNetStatus.setText("网络连接失败\n点击重连");
+                mTvNetStatus.setText("网络连接失败\n点击返回重连");
                 mImgNetStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_net_disconn));
             } else if (msg.what == 2) {
                 String strContent = "";
@@ -1874,7 +1811,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
 
         String localmac = sharedPreferences.getString("MAC", "");
-        System.out.println("local："+localmac  + "  mac2: "+mac);
+        System.out.println("local：" + localmac + "  mac2: " + mac);
 
         if (localmac.equals("")) {
             return true;
