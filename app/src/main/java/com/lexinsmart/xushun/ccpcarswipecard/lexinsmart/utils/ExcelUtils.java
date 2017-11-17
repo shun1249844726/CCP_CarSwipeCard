@@ -139,7 +139,7 @@ public class ExcelUtils {
 				}
 
 				writebook.write();
-				Toast.makeText(c, "导出到手机存储中文件夹Record成功!"+sheetnumber, Toast.LENGTH_SHORT).show();
+			//	Toast.makeText(c, "导出到手机存储中文件夹Record成功!"+sheetnumber, Toast.LENGTH_SHORT).show();
 			} catch (Exception e) {
 				e.printStackTrace();
 			} finally {

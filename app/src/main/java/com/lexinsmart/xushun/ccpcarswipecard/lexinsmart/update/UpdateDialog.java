@@ -23,10 +23,11 @@ class UpdateDialog {
                             goToDownload(context, downloadUrl);
                         }
                     })
-                    .setNegativeButton(R.string.android_auto_update_dialog_btn_cancel, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int id) {
-                        }
-                    });
+//                    .setNegativeButton(R.string.android_auto_update_dialog_btn_cancel, new DialogInterface.OnClickListener() {
+//                        public void onClick(DialogInterface dialog, int id) {
+//                        }
+//                    })
+            ;
 
             AlertDialog dialog = builder.create();
             //点击对话框外面,对话框不消失
