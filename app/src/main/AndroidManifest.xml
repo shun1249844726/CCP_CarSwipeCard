@@ -76,6 +76,15 @@
         <!-- 定位需要的服务 -->
         <service android:name="com.amap.api.location.APSService">
         </service>
+        <meta-data
+            android:name="com.taobao.android.hotfix.IDSECRET"
+            android:value="24697302-1" />
+        <meta-data
+            android:name="com.taobao.android.hotfix.APPSECRET"
+            android:value="72d03b702fab753fbaeafa88997e759e" />
+        <meta-data
+            android:name="com.taobao.android.hotfix.RSASECRET"
+            android:value="MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCGR4YpXll3ecw2Zr3618JCSQdDyq5p2dsGo/Sb/tZcCv27dogYo1PqZGKeeDR+FIDWcUT+cpigoXBWscw8ARPMznVFake4BiTtf8zcgdexhGzGIJf70rbv+MIUqFQLnC6MWRL0psGYiYHs3f528YiSF2Bj8ZucdNbnWBguecMjjGVst+SgTu3aEyhLJAuioY+L17Or9oKYZuPWArS5oDrJ8GsgbpCydL3+ZKaqozdT9U/QJQGtYuzSOYMHLaUa7ugQQC9Cy9uhnw7jPOtsBIS0b25g5coLIqM1uavO14h698HUpw2kcFs1niQrn7+COfJiuGcBQnlFnIIUQACwm/yZAgMBAAECggEAVp2YWuLzTvAP3B+V+FJoih1VRFNfAgR3Fed4h49wclrcpKmmzE2+eXlba+EZ6yIKoUjbOk5tSWAZeLKjjSkcvoWGe8o8jOXZuCEx4iMXIPjMuViY8OVQ/6Y0euLBo+OQ2xMx+QH/6wb3+fSQieTvNV1C3fUhbWCopv3aS1BboXef1tOZQxzrSLf6pp+ShC21aZbXQDbgq3+sPnmYMgV4kuBRuc0Cl0/i/i2KZTJuF/Rdbl7LyTdQ3q1QIGjg+2rZbXJTwCo8Y4Ai4hzwygdR1NgaF8I0G97v5mTKQhJ1ocA8w5qvmgDOKHKo2JD3sUa4YSZM+B9orjYVTUQh70j5AQKBgQDlvWxK2OhJseAZ7Clx+sT1ArIXR5AuoD6aMdvZe0JB2qHGyFSXxvy41UZGatG3gJvPOaXjqI0iO3IVk2D+Mqh9Lblch8HRMmT6rXzRn9U2Odj+YuCiMwEZIlVkH1OTjrSQEE4iqj5vFs4bcy3C1CJv0vvdWewB/53bMl81q+D5kQKBgQCVoMPUpf8V+HwXknOGuhzCs5uxTWMc9PIdWUSAUCYTC4WA1SXZ781FWdoZpaidhUOlE0R4/O6I2RaSM0BYKCPMP0P/OaPzK4ItGPZnMjLw2zOBX4DmNjf4nwIsWEWxiI/L2ZgbspPUl6GzK3gNpZAYBIkJ/wvzihGSrBgyGkiOiQKBgHpJLY9ZjatMZwDlV9o3pQbVfH4vtWtcGHZy+5bzqPzspxfsIjr3zCWGQHXS/fYzGrxe7xIS8ay6/6rEW+hyhoS7BeNez6fOrzlPhxT9grvuZrZhYzhy9a6vO8yjcBUm7K2SQETrYXg4J1UtJbqCuCHVqALWjm0x5pB6a3tiFcpBAoGAUpD3/yvqavFHaKqD3WBt5nK+A0S04JG52MAdsMCJghDlhoYX8P8GwrImS+jB9spG3ZyYODs6VYGVlu95HixoNJjkqL3h3pmvp7sSnTdyLL6I2Wcd9esNT8BOrrG3I5Q75T0ZVo9gS/uwWvItuToXHWnDRSTcL3OM5ubYIy2lxCECgYALR3SqYCm93KSLfKRPUGjQUiv0VtaziNOrTGzzXpRb0Ow/WG2ZGXwZEGJuDXFctWtTkEC+uXFNrMQW+JHpLLJ3ji0rIfF5FWOd+r1llsShOFSoIrbbT4p7NXiJsyHYy7DcBZ+p1EZlIXgwxwjALr/HVbZ7Nt54WJ9cqw9qmI+VRQ==" />
 
         <activity
             android:name=".lexinsmart.MainActivity"
