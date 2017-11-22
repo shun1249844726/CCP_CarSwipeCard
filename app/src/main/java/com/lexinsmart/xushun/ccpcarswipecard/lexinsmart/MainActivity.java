@@ -79,8 +79,10 @@ import com.google.gson.JsonParser;
 import com.lexinsmart.xushun.ccpcarswipecard.R;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.CheckPermissionsActivity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity.StaffListActivity;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.AckDeviceInfoEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.AckRequireOk;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.AppVersionEntity;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.DeviceInfoEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.EverySwipLogEntity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.InfoModel;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.RefreshTimeEntity;
@@ -247,7 +249,9 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
     private static final String uploadFilePath = "/storage/emulated/0/Android/data/com.lexinsmart.xushun.ccpcarswipecard/files/Record/刷卡详细记录.xls";
 
     boolean sendToOss = false;
+    int getDeviceFlag = 0;
 
+    String DeviceRemarks = IMEI;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -265,14 +269,14 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 //                .penaltyLog()
 //                .penaltyDeath()
 //                .build());
-        System.out.println("life:"+"onCreate");
+        System.out.println("life:" + "onCreate");
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);   //应用运行时，保持屏幕高亮，不锁屏
 
 
         Date mDate = new Date();   //设置上传到OSS的文件的目录结构   logs/日期/IMEI/时间
-       // String dateString = DateUtils.dateToString(mDate, "SHORT");
+        // String dateString = DateUtils.dateToString(mDate, "SHORT");
         String dateString = DateUtils.getStringDate(mDate);
         uploadObject = "logs/" + dateString + "/" + IMEI + "/" + DateUtils.getTimeShort() + ".xls";
 
@@ -317,6 +321,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         topicList.add("ccp/remote_card/" + IMEI);  //注册刷卡的话题
         topicList.add("ccp/app_version/" + IMEI);
+        topicList.add("ccp/device_info/test/" + IMEI);
 //        Logger.d("topic:" + topic);
 
         if (MqttV3Service.mqttAndroidClient == null) {
@@ -352,6 +357,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         soundPoolMap.put(KEY_SOUND_A4, mSoundPool.load(this, R.raw.donotswip, 1));
 
 
+
     }
 
     /**
@@ -380,9 +386,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                     handled = true;
                     break;
                 case STS_TOKEN_SUC:
-                    Toasty.success(MainActivity.this, "获取认证成功！!", Toast.LENGTH_SHORT, true).show();
-
-
+               //     Toasty.success(MainActivity.this, "获取认证成功！!", Toast.LENGTH_SHORT, true).show();
                     StsModel response = (StsModel) msg.obj;
                     setOssClient(response.Credentials.AccessKeyId, response.Credentials.AccessKeySecret, response.Credentials.SecurityToken);
                     System.out.println("STS:-------StsToken.Expiration-------" + response.Credentials.Expiration);
@@ -463,9 +467,10 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 //        String dateString = DateUtils.dateToString(mDate, "SHORT");
         String dateString = DateUtils.getStringDate(mDate);
 
-        uploadObject = "logs/" + dateString + "/" + IMEI + "/" + StringUtils.getImeIlast5(IMEI)+"_"+DateUtils.getStringDate_2(mDate)+"_"+DateUtils.getTimeShort() + ".xls";
+        uploadObject = "logs/" + dateString + "/" + DeviceRemarks + "/" + DeviceRemarks + "_" + DateUtils.getStringDate_2(mDate) + "_" + DateUtils.getTimeShort() + ".xls";
 
         putObjectSamples = new PutObjectSamples(oss, testBucket, uploadObject, uploadFilePath);
+        System.out.println("uploadObject:"+uploadObject);
     }
 
     View.OnClickListener llnetClickListener = new View.OnClickListener() {
@@ -592,7 +597,11 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             RealmResults<EverySwipLogEntity> logs = everySwipLogHelper.getAllLog();
             ArrayList<ArrayList<String>> logsArray = new ArrayList<>();
             if (logs != null) {
-                for (int i = 0; i < logs.size(); i++) {   //将从数据库获取的数据，转成list   写入Excel
+                int size = logs.size();
+                if (size>200){
+                    size = 200;
+                }
+                for (int i = 0; i < size; i++) {   //将从数据库获取的数据，转成list   写入Excel
                     EverySwipLogEntity everySwipLogEntity = logs.get(i);
 
                     ArrayList<String> logbeanList = new ArrayList<String>();
@@ -605,8 +614,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 }
                 ExcelUtils.writeObjListToExcel(0, logsArray, fileName, this);   //写入sheet0
             }
-
-
             initStsData();  //初始化 OSS Sts   获取TOKEN 等信息。
 
         }
@@ -1453,7 +1460,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         }
         mMapView.onResume();
 
-        System.out.println("life:"+"onResume");
+        System.out.println("life:" + "onResume");
 
     }
 
@@ -1471,14 +1478,15 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         mSmdtManager.smdtSetStatusBar(getApplicationContext(), false);
         UiUtils.hideNavigate(this);
 
-        System.out.println("life:"+"onStart");
+        System.out.println("life:" + "onStart");
 
     }
+
     @Override
-    protected  void onRestart() {
+    protected void onRestart() {
 
         super.onRestart();
-        System.out.println("life:"+"onReStart");
+        System.out.println("life:" + "onReStart");
 
     }
 
@@ -1489,7 +1497,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         //deactivate();
 
-        System.out.println("life:"+"onPause");
+        System.out.println("life:" + "onPause");
 
     }
 
@@ -1499,7 +1507,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         mSmdtManager.smdtSetStatusBar(getApplicationContext(), true);
         System.out.println("onstop");
-        System.out.println("life:"+"onStop");
+        System.out.println("life:" + "onStop");
 
     }
 
@@ -1522,7 +1530,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         MqttV3Service.closeMqtt();
         //  MqttV3Service.client = null;
 
-        System.out.println("life:"+"onDestroy");
+        System.out.println("life:" + "onDestroy");
     }
 
     /**
@@ -1547,7 +1555,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
     @Override
     public void onLocationChanged(AMapLocation location) {
-        System.out.println("onLocationChanged:"+location.getLocationType());
+        System.out.println("onLocationChanged:" + location.getLocationType());
         if (mListener != null && location != null) {
             if (location.getErrorCode() == 0) {
                 mListener.onLocationChanged(location);// 显示系统小蓝点
@@ -1572,7 +1580,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         if (null != location) {
             StringBuffer sb = new StringBuffer();
             //errCode等于0代表定位成功，其他的为定位失败，具体的可以参照官网定位错误码说明
-            if(location.getErrorCode() == 0){
+            if (location.getErrorCode() == 0) {
                 sb.append("定位成功" + "\n");
                 sb.append("定位类型: " + location.getLocationType() + "\n");
                 sb.append("经    度    : " + location.getLongitude() + "\n");
@@ -1602,7 +1610,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 sb.append("错误描述:" + location.getLocationDetail() + "\n");
             }
             sb.append("***定位质量报告***").append("\n");
-            sb.append("* WIFI开关：").append(location.getLocationQualityReport().isWifiAble() ? "开启":"关闭").append("\n");
+            sb.append("* WIFI开关：").append(location.getLocationQualityReport().isWifiAble() ? "开启" : "关闭").append("\n");
             sb.append("* GPS状态：").append(getGPSStatusString(location.getLocationQualityReport().getGPSStatus())).append("\n");
             sb.append("* GPS星数：").append(location.getLocationQualityReport().getGPSSatellites()).append("\n");
             sb.append("****************").append("\n");
@@ -1616,14 +1624,16 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             mTvLocationResult.setText("定位失败，loc is null");
         }
     }
+
     /**
      * 获取GPS状态的字符串
+     *
      * @param statusCode GPS状态码
      * @return
      */
-    private String getGPSStatusString(int statusCode){
+    private String getGPSStatusString(int statusCode) {
         String str = "";
-        switch (statusCode){
+        switch (statusCode) {
             case AMapLocationQualityReport.GPS_STATUS_OK:
                 str = "GPS状态正常";
                 break;
@@ -1642,22 +1652,26 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         }
         return str;
     }
+
     public void showLocationStatus(int what) {
         if (what == 13) {
-            Logger.d("check location no ");
-            mImgGpsStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_gps_location));
-            mTvGpsStatus.setText("定位成功！");
+            if (!mTvGpsStatus.getText().equals("定位成功！")) {
+                mImgGpsStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_gps_location));
+                mTvGpsStatus.setText("定位成功！");
+            }
+
         } else if (what == 14) {
-            Logger.d("check location ok");
-            mImgGpsStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_gps_location_no));
-            mTvGpsStatus.setText("定位失败！");
+            if (!mTvGpsStatus.getText().equals("定位失败！")) {
+                mImgGpsStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_gps_location_no));
+                mTvGpsStatus.setText("定位失败！");
+            }
         }
     }
 
     @Override
     public void activate(OnLocationChangedListener listener) {
         mListener = listener;
-        System.out.println("activate:"+"activate!");
+        System.out.println("activate:" + "activate!");
 
         if (mlocationClient == null) {
             mlocationClient = new AMapLocationClient(this);
@@ -1708,10 +1722,29 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             super.handleMessage(msg);
             if (msg.what == 1) {
                 Toasty.success(MainActivity.this, "网络连接成功!", Toast.LENGTH_SHORT, true).show();
-
                 mTvNetStatus.setText("网络连接成功");
                 mImgNetStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_net_ok));
 
+                SharedPreferences preferences = getSharedPreferences("DEVICEINFO", MODE_PRIVATE);
+                DeviceRemarks = preferences.getString("REMARKS",IMEI);
+                if (DeviceRemarks.equals(IMEI) || getDeviceFlag == 0){
+                    if (MqttV3Service.isConnected()) {
+                        DeviceInfoEntity deviceInfoEntity = new DeviceInfoEntity();
+                        deviceInfoEntity.setCmd_type("device_info");
+
+                        DeviceInfoEntity.CmdContentBean cmdContentBean = new DeviceInfoEntity.CmdContentBean();
+                        cmdContentBean.setDevice_iemi(IMEI);
+                        cmdContentBean.setTime(new Timestamp(System.currentTimeMillis()).toString());
+                        deviceInfoEntity.setCmd_content(cmdContentBean);
+
+
+                        Gson gson = new Gson();
+                        String s = gson.toJson(deviceInfoEntity);
+                        Logger.json(s);
+                        MqttV3Service.publishMsg(s, 1, 2);
+                        getDeviceFlag = 1;
+                    }
+                }
             } else if (msg.what == 0) {
                 Toasty.error(MainActivity.this, "网络连接失败!", Toast.LENGTH_SHORT, true).show();
 
@@ -1786,6 +1819,29 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                         } else if (cmd_type.equals("ack_version")) {
                             if (status_code == 0) {
                                 Logger.d("提交软件版本成功：");
+                            } else {
+
+                            }
+                        } else if (cmd_type.equals("ack_device_info")) {
+                            if (status_code == 0) {
+                                System.out.println("获取设备信息成功：");
+                                Gson gson = new Gson();
+                                AckDeviceInfoEntity ackDeviceInfoEntity = gson.fromJson(strContent, AckDeviceInfoEntity.class);
+
+                                SharedPreferences preferences = getSharedPreferences("DEVICEINFO", MODE_PRIVATE);
+                                SharedPreferences.Editor editor = preferences.edit();
+                                editor.clear();
+                                if (ackDeviceInfoEntity.getCmd_content().getRemarks() == null)
+                                {
+                                    editor.putString("REMARKS", IMEI);
+
+                                }else {
+                                    editor.putString("REMARKS", ackDeviceInfoEntity.getCmd_content().getRemarks().toString());
+                                    DeviceRemarks = ackDeviceInfoEntity.getCmd_content().getRemarks().toString();
+
+                                }
+                                editor.commit();
+
                             } else {
 
                             }
