@@ -3,6 +3,7 @@ package com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db;
 import android.content.Context;
 
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.InfoModel;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.SwipCardLog;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -72,5 +73,12 @@ public class StaffInfoHelper {
         }else {
             return infoModel;
         }
+    }
+
+    public void clearAll() {
+        mRealm.beginTransaction();
+        RealmResults realmResults = mRealm.where(InfoModel.class).findAll();
+        realmResults.deleteAllFromRealm();
+        mRealm.commitTransaction();
     }
 }

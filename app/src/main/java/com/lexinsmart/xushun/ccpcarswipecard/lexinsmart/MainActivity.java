@@ -575,11 +575,25 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 oneswiplogbeanlist.add(StringUtils.checkIsNull(oneswiplog.getName()));
                 oneswiplogbeanlist.add(StringUtils.checkIsNull(oneswiplog.getCardnum()));
                 oneswiplogbeanlist.add(StringUtils.checkIsNull(oneswiplog.getStaffnum()));
+                oneswiplogbeanlist.add(StringUtils.checkIsNull(oneswiplog.getCompany()));
                 oneswiplogbeanlist.add(StringUtils.checkIsNull(oneswiplog.getGetOnTime()));
                 oneswiplogbeanlist.add(StringUtils.checkIsNull(oneswiplog.getGetOffTime()));
-                oneswiplogbeanlist.add(StringUtils.checkIsNull(String.valueOf(oneswiplog.isGetOnFlag())));
+                String inCarFlag = "";
+                if (oneswiplog.isGetOnFlag()){
+                    inCarFlag = "在";
+                }else {
+                    inCarFlag = "不在";
+                }
+                oneswiplogbeanlist.add(StringUtils.checkIsNull(inCarFlag));
                 oneswiplogbeanlist.add(StringUtils.checkIsNull("" + oneswiplog.getSwipCount()));
-                oneswiplogbeanlist.add(StringUtils.checkIsNull(String.valueOf(oneswiplog.isGetUpOrOff())));
+
+                String onDutyFlag = "";
+                if (oneswiplog.isGetUpOrOff()){
+                    onDutyFlag = "上班";
+                }else {
+                    onDutyFlag = "下班";
+                }
+                oneswiplogbeanlist.add(StringUtils.checkIsNull(onDutyFlag));
 
                 incarlogsArray.add(oneswiplogbeanlist);
             }
@@ -1170,6 +1184,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 swipCardLog.setName(staffInfo.getName());
                 swipCardLog.setCardnum(cardNumberString);
                 swipCardLog.setStaffnum(staffInfo.getStaffnumber());
+                swipCardLog.setCompany(staffInfo.getCompany());
                 swipCardLog.setGetOnTime(new Timestamp(System.currentTimeMillis()).toString());
                 swipCardLog.setGetOnFlag(true);
                 swipCardLog.setSwipCount(1);
@@ -1204,6 +1219,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             logNew.setName(log.getName());
             logNew.setCardnum(log.getCardnum());
             logNew.setStaffnum(log.getStaffnum());
+            logNew.setCompany(log.getCompany());
             logNew.setGetOnTime(log.getGetOnTime());
 //            logNew.setGetOffTime((new Timestamp(System.currentTimeMillis())).toString());
             logNew.setGetOffTime(log.getGetOffTime());
@@ -1783,6 +1799,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                                     SwipCardLog swipCardLog = new SwipCardLog();
                                     swipCardLog.setName(name);
                                     swipCardLog.setCardnum(cardNumberString);
+                                    swipCardLog.setCompany("");//TODO  获取刷卡人的公司
                                     swipCardLog.setStaffnum(staffnumber);
                                     swipCardLog.setGetOnTime(new Timestamp(System.currentTimeMillis()).toString());
                                     swipCardLog.setGetOnFlag(true);

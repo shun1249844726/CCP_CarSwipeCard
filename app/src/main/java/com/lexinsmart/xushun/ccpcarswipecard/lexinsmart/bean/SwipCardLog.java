@@ -16,6 +16,7 @@ public class SwipCardLog extends RealmObject{
     @PrimaryKey
     private String cardnum;
     private String staffnum;
+    private String company;
     private String getOnTime;
     private String getOffTime;
     private boolean getOnFlag;
@@ -53,7 +54,13 @@ public class SwipCardLog extends RealmObject{
     public void setStaffnum(String staffnum) {
         this.staffnum = staffnum;
     }
+    public String getCompany() {
+        return company;
+    }
 
+    public void setCompany(String company) {
+        this.company = company;
+    }
     public String getGetOnTime() {
         return getOnTime;
     }

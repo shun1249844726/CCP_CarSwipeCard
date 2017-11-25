@@ -1,14 +1,10 @@
 package com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.activity;
 
 import android.Manifest;
-import android.app.smdt.SmdtManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
-import android.media.AudioManager;
-import android.media.SoundPool;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -21,23 +17,18 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import com.google.gson.Gson;
 import com.lexinsmart.xushun.ccpcarswipecard.R;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.MainActivity;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.InfoModel;
-import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db.RealmHelper;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db.StaffInfoHelper;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.update.AppUtils;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.update.CheckIfNeedUpdate;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.update.OnGetVersionListener;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.update.UpdateChecker;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant;
-import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.UiUtils;
-import com.orhanobut.logger.Logger;
 import com.wang.avi.AVLoadingIndicatorView;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -86,7 +77,6 @@ public class SplashActivity extends AppCompatActivity {
 
         try {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
                 //    ActivityCompat#requestPermissions
                 // here to request the missing permissions, and then overriding
                 //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
@@ -101,7 +91,8 @@ public class SplashActivity extends AppCompatActivity {
             Log.i("error", e.getMessage());
         }
         StaffInfoHelper staffInfoHelper = new StaffInfoHelper(this);
-        if (staffInfoHelper.getAllCount() == 0){
+        if (staffInfoHelper.getAllCount() != 2076 ){   //TODO 更新Excel 数据 要变动的。
+            staffInfoHelper.clearAll();
             new ExcelDataLoader().execute("info.xls");
             System.out.println("添加excel 数据");
         }else {
@@ -196,12 +187,13 @@ public class SplashActivity extends AppCompatActivity {
             Log.d(TAG, "total cols is 列=" + sheetColumns);
 
             for (int i = 0; i < sheetRows; i++) {
-                InfoModel countryModel = new InfoModel();
-                countryModel.setName(sheet.getCell(0, i).getContents());
-                countryModel.setCardnumber(sheet.getCell(1, i).getContents());
-                countryModel.setStaffnumber(sheet.getCell(2, i).getContents());
+                InfoModel infoModel = new InfoModel();
+                infoModel.setName(sheet.getCell(0, i).getContents());
+                infoModel.setCardnumber(sheet.getCell(1, i).getContents());
+                infoModel.setStaffnumber(sheet.getCell(2, i).getContents());
+                infoModel.setCompany(sheet.getCell(3,i).getContents());
 
-                infosList.add(countryModel);
+                infosList.add(infoModel);
             }
 
             workbook.close();

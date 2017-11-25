@@ -14,6 +14,15 @@ public class InfoModel extends RealmObject{
     @PrimaryKey
     private String cardnumber;
     private String staffnumber;
+    private String company;
+
+    public String getCompany() {
+        return company;
+    }
+
+    public void setCompany(String company) {
+        this.company = company;
+    }
 
     public String getName() {
         return name;
