@@ -1792,6 +1792,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                                 String name = ackRequireOk.getContent().getName();
                                 String staffnumber = ackRequireOk.getContent().getStaff_number();
                                 String cardnumber = ackRequireOk.getContent().getCard_number();
+                                String company = ackRequireOk.getContent().getCompany();
 
                                 if (cardNumberString.equals(cardnumber)) {
                                     Logger.d("卡号一致！");
@@ -1799,7 +1800,13 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                                     SwipCardLog swipCardLog = new SwipCardLog();
                                     swipCardLog.setName(name);
                                     swipCardLog.setCardnum(cardNumberString);
-                                    swipCardLog.setCompany("");//TODO  获取刷卡人的公司
+                                    if (strContent.contains("company")){
+                                        System.out.println("swipcardlog:"+"company:"+company);
+                                        swipCardLog.setCompany(company);//TODO  获取刷卡人的公司
+                                    }else {
+                                        System.out.println("swipcardlog:"+"no company");
+                                        swipCardLog.setCompany("无");//TODO  获取刷卡人的公司
+                                    }
                                     swipCardLog.setStaffnum(staffnumber);
                                     swipCardLog.setGetOnTime(new Timestamp(System.currentTimeMillis()).toString());
                                     swipCardLog.setGetOnFlag(true);

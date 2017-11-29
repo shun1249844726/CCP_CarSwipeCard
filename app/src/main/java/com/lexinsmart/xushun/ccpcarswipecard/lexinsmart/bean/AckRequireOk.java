@@ -53,6 +53,15 @@ public class AckRequireOk {
         private String name;
         private String staff_number;
         private String card_number;
+        private String company;
+
+        public String getCompany() {
+            return company;
+        }
+
+        public void setCompany(String company) {
+            this.company = company;
+        }
 
         public String getName() {
             return name;
