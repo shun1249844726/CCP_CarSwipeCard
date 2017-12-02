@@ -321,7 +321,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         topicList.add("ccp/remote_card/" + IMEI);  //注册刷卡的话题
         topicList.add("ccp/app_version/" + IMEI);
-        topicList.add("ccp/device_info/test/" + IMEI);
+        topicList.add("ccp/device_info/" + IMEI);
 //        Logger.d("topic:" + topic);
 
         if (MqttV3Service.mqttAndroidClient == null) {
@@ -968,7 +968,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 if ((System.currentTimeMillis() - lastTimeDate.getTime()) < (1000 * 5)) {
 //                    System.out.println("请勿连续刷卡"+(System.currentTimeMillis()-lastTimeDate.getTime()));
                     mSoundPool.play(soundPoolMap.get(KEY_SOUND_A4), 1, 1, 0, 0, 1);
-
                     return;
                 }
             }
