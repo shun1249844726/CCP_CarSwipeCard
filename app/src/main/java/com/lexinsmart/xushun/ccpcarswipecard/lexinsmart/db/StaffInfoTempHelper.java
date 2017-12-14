@@ -3,29 +3,27 @@ package com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db;
 import android.content.Context;
 
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.InfoModel;
-import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.SwipCardLog;
 
 import java.io.File;
 import java.util.ArrayList;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
-import io.realm.RealmModel;
 import io.realm.RealmResults;
 
 import static junit.framework.Assert.assertTrue;
 
 /**
- * Created by xushun on 2017/11/1.
+ * Created by xushun on 2017/12/14.
  * 功能描述：
  * 心情：
  */
 
-public class StaffInfoHelper {
+public class StaffInfoTempHelper {
     private Realm mRealm;
-    public static final String STAFF_DB_NAME = "staffinfo.realm";
+    public static final String STAFF_DB_NAME = "staffinfotemp.realm";
 
-    public StaffInfoHelper(Context context) {
+    public StaffInfoTempHelper(Context context) {
 
 
         File directory = context.getExternalFilesDir(null);
@@ -33,7 +31,7 @@ public class StaffInfoHelper {
         assertTrue(directory.exists());
 
 
-        RealmConfiguration configuration=new RealmConfiguration.Builder()
+        RealmConfiguration configuration = new RealmConfiguration.Builder()
                 .name(STAFF_DB_NAME)
                 .directory(directory)
                 .deleteRealmIfMigrationNeeded()
@@ -49,32 +47,36 @@ public class StaffInfoHelper {
         }
         mRealm.commitTransaction();
     }
+
     public void addinfo(InfoModel infoModel) {
         mRealm.beginTransaction();
         mRealm.copyToRealmOrUpdate(infoModel);
         mRealm.commitTransaction();
     }
+
     public void close() {
         if (mRealm != null) {
             mRealm.close();
         }
     }
-    public int  getAllCount(){
+
+    public int getAllCount() {
         RealmResults<InfoModel> infos = mRealm.where(InfoModel.class)
                 .findAll();
 
-        if (infos == null){
+        if (infos == null) {
             return 0;
-        }else {
+        } else {
             return infos.size();
         }
     }
-    public InfoModel getInfoByCardno(String cardno){
-        InfoModel infoModel = mRealm.where(InfoModel.class).equalTo("cardnumber",cardno).findFirst();
 
-        if(infoModel == null){
+    public InfoModel getInfoByCardno(String cardno) {
+        InfoModel infoModel = mRealm.where(InfoModel.class).equalTo("cardnumber", cardno).findFirst();
+
+        if (infoModel == null) {
             return null;
-        }else {
+        } else {
             return infoModel;
         }
     }

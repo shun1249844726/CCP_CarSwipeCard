@@ -25,7 +25,9 @@ import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.update.AppUtils;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.update.CheckIfNeedUpdate;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.update.OnGetVersionListener;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.update.UpdateChecker;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Const;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.Constant;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.utils.SpUtils;
 import com.wang.avi.AVLoadingIndicatorView;
 
 import java.util.ArrayList;
@@ -81,7 +83,7 @@ public class SplashActivity extends AppCompatActivity {
                 // here to request the missing permissions, and then overriding
                 //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
                 //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
+                // to handle the case where the user grants the permission. See the documentationSpUtils
                 // for ActivityCompat#requestPermissions for more details.
                 return;
             }
@@ -90,14 +92,16 @@ public class SplashActivity extends AppCompatActivity {
         } catch (Exception e) {
             Log.i("error", e.getMessage());
         }
+
+        boolean isFirstOpen = SpUtils.getBoolean(this, Constant.FIRST_OPEN);
+
         StaffInfoHelper staffInfoHelper = new StaffInfoHelper(this);
-        if (staffInfoHelper.getAllCount() != 2076 ){   //TODO 更新Excel 数据 要变动的。
+        if (!isFirstOpen){   //TODO 更新Excel 数据 要变动的。
             staffInfoHelper.clearAll();
             new ExcelDataLoader().execute("info.xls");
             System.out.println("添加excel 数据");
         }else {
             System.out.println("已经有了，不用更新数据了");
-
         }
         staffInfoHelper.close();
         new Handler().postDelayed(new Runnable() {
@@ -131,6 +135,8 @@ public class SplashActivity extends AppCompatActivity {
         }, 2000);
 
         mTvLodingConfig.setText("加载完成，等待进入主页！");
+
+        SpUtils.putBoolean(SplashActivity.this, Constant.FIRST_OPEN, true);
 
 
     }

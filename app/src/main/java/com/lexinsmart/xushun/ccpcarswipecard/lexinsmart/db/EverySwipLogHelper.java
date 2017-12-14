@@ -56,6 +56,12 @@ public class EverySwipLogHelper {
             return logs;
         }
     }
+    public void clearAll(){
+        mRealm.beginTransaction();
+        RealmResults realmResults = mRealm.where(EverySwipLogEntity.class).findAll();
+        realmResults.deleteAllFromRealm();
+        mRealm.commitTransaction();
+    }
     public void close() {
         if (mRealm != null) {
             mRealm.close();

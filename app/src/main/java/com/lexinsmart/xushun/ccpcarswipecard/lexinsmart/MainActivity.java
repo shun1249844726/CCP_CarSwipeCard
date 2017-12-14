@@ -92,6 +92,7 @@ import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.bean.SwipCardLog;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db.EverySwipLogHelper;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db.RealmHelper;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db.StaffInfoHelper;
+import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.db.StaffInfoTempHelper;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.mqtt.MqttV3Service;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.oss.ProgressCallback;
 import com.lexinsmart.xushun.ccpcarswipecard.lexinsmart.oss.PutObjectSamples;
@@ -356,8 +357,6 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
         soundPoolMap.put(KEY_SOUND_A3, mSoundPool.load(this, R.raw.ackfail, 1));
         soundPoolMap.put(KEY_SOUND_A4, mSoundPool.load(this, R.raw.donotswip, 1));
 
-
-
     }
 
     /**
@@ -386,7 +385,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                     handled = true;
                     break;
                 case STS_TOKEN_SUC:
-               //     Toasty.success(MainActivity.this, "获取认证成功！!", Toast.LENGTH_SHORT, true).show();
+                    //     Toasty.success(MainActivity.this, "获取认证成功！!", Toast.LENGTH_SHORT, true).show();
                     StsModel response = (StsModel) msg.obj;
                     setOssClient(response.Credentials.AccessKeyId, response.Credentials.AccessKeySecret, response.Credentials.SecurityToken);
                     System.out.println("STS:-------StsToken.Expiration-------" + response.Credentials.Expiration);
@@ -467,10 +466,13 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 //        String dateString = DateUtils.dateToString(mDate, "SHORT");
         String dateString = DateUtils.getStringDate(mDate);
 
+        SharedPreferences preferences = getSharedPreferences("DEVICEINFO", MODE_PRIVATE);
+        DeviceRemarks = preferences.getString("REMARKS", IMEI);
+
         uploadObject = "logs/" + dateString + "/" + DeviceRemarks + "/" + DeviceRemarks + "_" + DateUtils.getStringDate_2(mDate) + "_" + DateUtils.getTimeShort() + ".xls";
 
         putObjectSamples = new PutObjectSamples(oss, testBucket, uploadObject, uploadFilePath);
-        System.out.println("uploadObject:"+uploadObject);
+        System.out.println("uploadObject:" + uploadObject);
     }
 
     View.OnClickListener llnetClickListener = new View.OnClickListener() {
@@ -579,22 +581,24 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 oneswiplogbeanlist.add(StringUtils.checkIsNull(oneswiplog.getGetOnTime()));
                 oneswiplogbeanlist.add(StringUtils.checkIsNull(oneswiplog.getGetOffTime()));
                 String inCarFlag = "";
-                if (oneswiplog.isGetOnFlag()){
+                if (oneswiplog.isGetOnFlag()) {
                     inCarFlag = "在";
-                }else {
+                } else {
                     inCarFlag = "不在";
                 }
                 oneswiplogbeanlist.add(StringUtils.checkIsNull(inCarFlag));
                 oneswiplogbeanlist.add(StringUtils.checkIsNull("" + oneswiplog.getSwipCount()));
 
                 String onDutyFlag = "";
-                if (oneswiplog.isGetUpOrOff()){
+                if (oneswiplog.isGetUpOrOff()) {
                     onDutyFlag = "上班";
-                }else {
+                } else {
                     onDutyFlag = "下班";
                 }
                 oneswiplogbeanlist.add(StringUtils.checkIsNull(onDutyFlag));
-
+                SharedPreferences preferences = getSharedPreferences("DEVICEINFO", MODE_PRIVATE);
+                DeviceRemarks = preferences.getString("REMARKS", IMEI);
+                oneswiplogbeanlist.add(DeviceRemarks);
                 incarlogsArray.add(oneswiplogbeanlist);
             }
 //            File file = new File(getExternalFilesDir(null) + "/Record");
@@ -612,7 +616,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             ArrayList<ArrayList<String>> logsArray = new ArrayList<>();
             if (logs != null) {
                 int size = logs.size();
-                if (size>200){
+                if (size > 200) {
                     size = 200;
                 }
                 for (int i = 0; i < size; i++) {   //将从数据库获取的数据，转成list   写入Excel
@@ -634,6 +638,10 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
         realmHelper.clearAll();
         realmHelper.close();
+
+        EverySwipLogHelper everySwipLogHelper = new EverySwipLogHelper(mContext);
+        everySwipLogHelper.clearAll();
+        everySwipLogHelper.close();
 
         mMainTvStaffNum.setText("— —");
         mMainTvName.setText("— —");
@@ -1177,8 +1185,15 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             InfoModel staffInfo = staffInfoHelper.getInfoByCardno(cardNumberString);
             if (staffInfo == null) {
                 MqttV3Service.publishMsg(s, Qos, 0);
+                System.out.println("获取人员信息：sendtime:"+DateUtils.timestamptostring(new Timestamp(System.currentTimeMillis())));
+
             } else {//先从本地缓存查询
-                System.out.println("本地读取数据");
+                StaffInfoTempHelper staffInfoTempHelper = new StaffInfoTempHelper(mContext);
+                if (staffInfoTempHelper.getInfoByCardno(cardNumberString) != null){
+                    MqttV3Service.publishMsg(s, Qos, 0);
+                    System.out.println("获取人员信息：本地有临时数据：sendtime:"+DateUtils.timestamptostring(new Timestamp(System.currentTimeMillis())));
+                }
+                System.out.println("获取人员信息：：本地读取数据");
                 SwipCardLog swipCardLog = new SwipCardLog();
                 swipCardLog.setName(staffInfo.getName());
                 swipCardLog.setCardnum(cardNumberString);
@@ -1741,8 +1756,10 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 mImgNetStatus.setImageDrawable(getResources().getDrawable(R.mipmap.ic_net_ok));
 
                 SharedPreferences preferences = getSharedPreferences("DEVICEINFO", MODE_PRIVATE);
-                DeviceRemarks = preferences.getString("REMARKS",IMEI);
-                if (DeviceRemarks.equals(IMEI) || getDeviceFlag == 0){
+                DeviceRemarks = preferences.getString("REMARKS", IMEI);
+
+
+                if (DeviceRemarks.equals(IMEI) || getDeviceFlag == 0) {
                     if (MqttV3Service.isConnected()) {
                         DeviceInfoEntity deviceInfoEntity = new DeviceInfoEntity();
                         deviceInfoEntity.setCmd_type("device_info");
@@ -1793,17 +1810,44 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                                 String cardnumber = ackRequireOk.getContent().getCard_number();
                                 String company = ackRequireOk.getContent().getCompany();
 
-                                if (cardNumberString.equals(cardnumber)) {
-                                    Logger.d("卡号一致！");
 
+
+                                InfoModel infoModel = new InfoModel();
+                                infoModel.setCompany(company);
+                                infoModel.setStaffnumber(staffnumber);
+                                infoModel.setName(name);
+                                infoModel.setCardnumber(cardnumber);
+                                StaffInfoTempHelper staffInfoTempHelper = new StaffInfoTempHelper(mContext);
+                                InfoModel infoModeltemp =  staffInfoTempHelper.getInfoByCardno(cardnumber);
+
+                                if (infoModeltemp != null && infoModeltemp.getCompany().equals(company) && infoModeltemp.getName().equals(name)
+                                        && infoModeltemp.getStaffnumber().equals(staffnumber)){
+                                    System.out.println("获取人员信息:"+"与原来信息一致");
+                                }else {
+                                    System.out.println("获取人员信息:"+"与原来信息不一致");
+                                    staffInfoTempHelper.addinfo(infoModel);//存入临时表
+                                    staffInfoTempHelper.close();
+                                    System.out.println("获取人员信息：存入临时表");
+
+
+                                    StaffInfoHelper staffInfoHelper = new StaffInfoHelper(mContext);
+                                    staffInfoHelper.addinfo(infoModel);//存入主表
+                                    staffInfoHelper.close();
+                                    System.out.println("获取人员信息：存入主表");
+                                }
+
+
+//                                if (cardNumberString.equals(cardnumber)) {
+                                if (true) {
+                                    System.out.println("获取人员信息：gettime:"+DateUtils.timestamptostring(new Timestamp(System.currentTimeMillis())));
                                     SwipCardLog swipCardLog = new SwipCardLog();
                                     swipCardLog.setName(name);
-                                    swipCardLog.setCardnum(cardNumberString);
-                                    if (strContent.contains("company")){
-                                        System.out.println("swipcardlog:"+"company:"+company);
+                                    swipCardLog.setCardnum(cardnumber);
+                                    if (strContent.contains("company")) {
+                                        System.out.println("swipcardlog:" + "company:" + company);
                                         swipCardLog.setCompany(company);//TODO  获取刷卡人的公司
-                                    }else {
-                                        System.out.println("swipcardlog:"+"no company");
+                                    } else {
+                                        System.out.println("swipcardlog:" + "no company");
                                         swipCardLog.setCompany("无");//TODO  获取刷卡人的公司
                                     }
                                     swipCardLog.setStaffnum(staffnumber);
@@ -1824,6 +1868,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                                     realmHelper.close();
 
                                     mSoundPool.play(soundPoolMap.get(KEY_SOUND_A2), 1, 1, 0, 0, 1);
+
+
 
                                 }
 
@@ -1853,17 +1899,28 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 
                                 SharedPreferences preferences = getSharedPreferences("DEVICEINFO", MODE_PRIVATE);
                                 SharedPreferences.Editor editor = preferences.edit();
-                                editor.clear();
-                                if (ackDeviceInfoEntity.getCmd_content().getRemarks() == null)
-                                {
-                                    editor.putString("REMARKS", IMEI);
+                                String oldremarks = preferences.getString("REMARKS", IMEI);
+//                                System.out.println("getinfo:"+"oldremarks："+oldremarks);
 
-                                }else {
-                                    editor.putString("REMARKS", ackDeviceInfoEntity.getCmd_content().getRemarks().toString());
-                                    DeviceRemarks = ackDeviceInfoEntity.getCmd_content().getRemarks().toString();
+                                if (ackDeviceInfoEntity.getCmd_content().getRemarks() == null) {
+                                    //   editor.putString("REMARKS", IMEI);
 
+                                } else {
+                                    String remarks = ackDeviceInfoEntity.getCmd_content().getRemarks().toString();
+//                                    System.out.println("getinfo:"+"remarks："+remarks);
+
+                                    if (!remarks.equals(oldremarks)) {
+                                        editor.clear();
+                                        editor.putString("REMARKS", remarks);
+                                        editor.commit();
+//                                        System.out.println("getinfo:"+"更新信息");
+
+                                    } else {
+//                                        System.out.println("getinfo:"+"不用更新信息");
+                                    }
+
+                                    DeviceRemarks = remarks;
                                 }
-                                editor.commit();
 
                             } else {
 
