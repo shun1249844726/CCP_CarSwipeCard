@@ -586,6 +586,9 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 } else {
                     inCarFlag = "不在";
                 }
+                if (oneswiplog.getSwipCount() != 2){
+                    inCarFlag = "异常";
+                }
                 oneswiplogbeanlist.add(StringUtils.checkIsNull(inCarFlag));
                 oneswiplogbeanlist.add(StringUtils.checkIsNull("" + oneswiplog.getSwipCount()));
 
@@ -594,6 +597,9 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                     onDutyFlag = "上班";
                 } else {
                     onDutyFlag = "下班";
+                }
+                if (oneswiplog.getSwipCount() != 2){
+                    onDutyFlag = "异常";
                 }
                 oneswiplogbeanlist.add(StringUtils.checkIsNull(onDutyFlag));
                 SharedPreferences preferences = getSharedPreferences("DEVICEINFO", MODE_PRIVATE);
