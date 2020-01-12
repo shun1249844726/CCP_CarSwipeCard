@@ -1,6 +1,8 @@
 package com.lexinsmart.xushun.ccpcarswipecard.lexinsmart;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.app.smdt.SmdtManager;
@@ -10,6 +12,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.SoundPool;
@@ -19,8 +22,10 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Process;
+import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.Toolbar;
@@ -270,6 +275,8 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
 //                .penaltyLog()
 //                .penaltyDeath()
 //                .build());
+
+        getDeviceId(this);
         System.out.println("life:" + "onCreate");
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
@@ -1765,7 +1772,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                 DeviceRemarks = preferences.getString("REMARKS", IMEI);
 
 
-                if (DeviceRemarks.equals(IMEI) || getDeviceFlag == 0) {
+                if (IMEI.equals(DeviceRemarks) || getDeviceFlag == 0) {
                     if (MqttV3Service.isConnected()) {
                         DeviceInfoEntity deviceInfoEntity = new DeviceInfoEntity();
                         deviceInfoEntity.setCmd_type("device_info");
@@ -1826,7 +1833,7 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
                                 StaffInfoTempHelper staffInfoTempHelper = new StaffInfoTempHelper(mContext);
                                 InfoModel infoModeltemp =  staffInfoTempHelper.getInfoByCardno(cardnumber);
 
-                                if (infoModeltemp != null && infoModeltemp.getCompany().equals(company) && infoModeltemp.getName().equals(name)
+                                if (infoModeltemp != null && infoModeltemp.getName().equals(name)
                                         && infoModeltemp.getStaffnumber().equals(staffnumber)){
                                     System.out.println("获取人员信息:"+"与原来信息一致");
                                 }else {
@@ -1965,4 +1972,42 @@ public class MainActivity extends CheckPermissionsActivity implements LocationSo
             return false;
         }
     }
+    public final static int REQUEST_READ_PHONE_STATE = 1001;
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_READ_PHONE_STATE:
+                if ((grantResults.length > 0) && (grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                    //TODO
+                    getDeviceId(this);
+                } else {
+                    Toast.makeText(this, "权限已被用户拒绝", Toast.LENGTH_SHORT).show();
+                }
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    @SuppressLint("HardwareIds")
+    public static String getDeviceId(Context context) {
+        String deviceId = "";
+        TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        if (null != tm) {
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions((Activity) context, new String[]{Manifest.permission.READ_PHONE_STATE}, REQUEST_READ_PHONE_STATE);
+            } else {
+                if (tm.getDeviceId() != null) {
+                    deviceId = tm.getDeviceId();
+                } else {
+                    deviceId = Settings.Secure.getString(context.getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID);
+                }
+            }
+            Log.d("deviceId--->", deviceId);
+        }
+        return "";
+    }
+
 }

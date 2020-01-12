@@ -19,7 +19,8 @@ public class Constant {
     public static boolean GOTO = true;
 
 
-    public static final String MQTT_ADDRESS = "120.92.84.64";
+//    public static final String MQTT_ADDRESS = "120.92.84.64";
+    public static final String MQTT_ADDRESS = "36.156.154.39";
     public static final String MQTT_PORT = "1883";
 
     public static String IMEI = "";

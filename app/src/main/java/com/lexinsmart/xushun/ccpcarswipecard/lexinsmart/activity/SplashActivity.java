@@ -8,6 +8,7 @@ import android.content.res.AssetManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -87,7 +88,11 @@ public class SplashActivity extends AppCompatActivity {
                 // for ActivityCompat#requestPermissions for more details.
                 return;
             }
-            Constant.IMEI = telephonemanage.getDeviceId();
+            if (telephonemanage.getDeviceId() != null) {
+                Constant.IMEI = telephonemanage.getDeviceId();
+            } else {
+                Constant.IMEI = Settings.Secure.getString(this.getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID);
+            }
 
         } catch (Exception e) {
             Log.i("error", e.getMessage());

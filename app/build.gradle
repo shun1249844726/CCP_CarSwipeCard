@@ -3,24 +3,25 @@ apply plugin: 'realm-android'
 android {
     signingConfigs {
         config {
-            keyAlias 'ccp'
+            keyAlias 'key0'
             keyPassword 'xu087396'
-            storeFile file('/Users/xushun/android_studio_key.jks')
+            storeFile file('/Users/xushun/Documents/project/android/test/CCP_CarSwipeCard/keys/key.keystore')
             storePassword 'xu087396'
         }
     }
-    compileSdkVersion 25
-    buildToolsVersion "25.0.3"
+    compileSdkVersion 28
+    buildToolsVersion "28.0.3"
     defaultConfig {
         applicationId "com.lexinsmart.xushun.ccpcarswipecard"
         minSdkVersion 18
-        targetSdkVersion 25
+        targetSdkVersion 28
         versionCode 10
         versionName "1.0.10"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
         release {
+            debuggable true
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.config
@@ -52,14 +53,14 @@ dependencies {
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    compile 'com.android.support:appcompat-v7:25.3.1'
-    compile 'com.android.support.constraint:constraint-layout:1.0.0-alpha8'
-    compile 'com.android.support:design:25.3.1'
+    compile 'com.android.support:appcompat-v7:28.0.0'
+    compile 'com.android.support.constraint:constraint-layout:2.0.0-beta4'
+    compile 'com.android.support:design:28.0.0'
     testCompile 'junit:junit:4.12'
     compile 'com.jakewharton:butterknife:8.7.0'
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.7.0'
-    compile 'com.android.support:recyclerview-v7:25.3.1'
-    compile 'com.android.support:cardview-v7:25.3.1'
+    compile 'com.android.support:recyclerview-v7:28.0.0'
+    compile 'com.android.support:cardview-v7:28.0.0'
     compile 'com.orhanobut:logger:1.15'
     compile files('libs/Android_Map3D_SDK_V5.4.0_20170928.jar')
     compile 'com.wang.avi:library:2.1.3'
@@ -78,4 +79,7 @@ dependencies {
 
     compile 'com.aliyun.ams:alicloud-android-hotfix:3.1.6'
 
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'
 }

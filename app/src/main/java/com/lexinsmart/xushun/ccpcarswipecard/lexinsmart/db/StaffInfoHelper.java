@@ -13,8 +13,6 @@ import io.realm.RealmConfiguration;
 import io.realm.RealmModel;
 import io.realm.RealmResults;
 
-import static junit.framework.Assert.assertTrue;
-
 /**
  * Created by xushun on 2017/11/1.
  * 功能描述：
@@ -30,7 +28,6 @@ public class StaffInfoHelper {
 
         File directory = context.getExternalFilesDir(null);
         directory.mkdirs();
-        assertTrue(directory.exists());
 
 
         RealmConfiguration configuration=new RealmConfiguration.Builder()

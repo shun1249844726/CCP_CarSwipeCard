@@ -11,7 +11,6 @@ import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 
-import static junit.framework.Assert.assertTrue;
 
 /**
  * Created by xushun on 2017/12/14.
@@ -28,8 +27,6 @@ public class StaffInfoTempHelper {
 
         File directory = context.getExternalFilesDir(null);
         directory.mkdirs();
-        assertTrue(directory.exists());
-
 
         RealmConfiguration configuration = new RealmConfiguration.Builder()
                 .name(STAFF_DB_NAME)
